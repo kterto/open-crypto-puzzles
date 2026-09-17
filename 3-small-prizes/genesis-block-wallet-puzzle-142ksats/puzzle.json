@@ -47,10 +47,10 @@
     "certified_against": "the BIP-173 P2WSH test vector, and a real 2-of-2 P2WSH spent in block 963629 (tx 47ded3504e855ce418e46eeca4694b55a623d1e23a8e3c83292abbcf9cee9f7a, input 0) whose revealed keys rebuild the script and hash to the spent address; private key 1 to the generator point; negative control against the escrow"
   },
   "difficulty_left": "insight",
-  "difficulty_note": "the lock is fully characterized (2-of-2 P2WSH, exact offline oracle) and the corpus is 285 public bytes; passes 1 and 2 (2026-08-29) exhausted the mechanical readings of the August hints, pass 3 (2026-09-12) killed the raw 16-byte window model, and the author confirmed on 2026-09-15 that the entropy is not the raw 16 bytes but a 128-bit digest and that the passphrase is a name, the name of whoever received the first transaction; pass 4 (2026-09-17, 6.44e9 ordered pairs over 1,278 digests and 47 name formats, witnesses re-found) shows the digest input is none of the 73 obvious genesis readings; a question asking the author which input is hashed is unanswered on chain",
+  "difficulty_note": "the lock is fully characterized (2-of-2 P2WSH, exact offline oracle) and the corpus is 285 public bytes; passes 1 and 2 (2026-08-29) exhausted the mechanical readings of the August hints, pass 3 (2026-09-12) killed the raw 16-byte window model, and the author confirmed on 2026-09-15 that the entropy is not the raw 16 bytes but a 128-bit digest and that the passphrase is a name, the name of whoever received the first transaction; pass 4 (2026-09-17, three waves, 8.03e9 ordered pairs over 6,078 digest entropies and up to 137 name formats, witnesses re-found) shows the digest input is none of the 73 canonical genesis readings nor of 300 typed forms of the texts; the author answered the question that asks which input is hashed with a joke about refreshing his memory, which reads as a request for a larger payment",
   "tested_total": {
-    "candidates": 580413055316,
-    "families": 10,
+    "candidates": 582004716554,
+    "families": 11,
     "certified": true
   },
   "leads": [
@@ -74,8 +74,8 @@
     },
     {
       "rank": 4,
-      "title": "widen the digest inputs (trailing newline and file forms, concatenated fields) and the name formats",
-      "cost": "about 40 minutes on 8 cores",
+      "title": "widen the digest inputs beyond the typed forms killed in wave 3: concatenated fields, other file encodings, digest functions outside the 18 tested",
+      "cost": "hours on 8 cores, low prior",
       "status": "open"
     },
     {
@@ -86,8 +86,8 @@
     },
     {
       "rank": 6,
-      "title": "pass 4: 128-bit digest entropies (18 readings over 73 genesis inputs) with 47 name passphrases, both cosigner readings (6.44e9 pairs)",
-      "cost": "26 minutes on 8 cores",
+      "title": "pass 4: 128-bit digest entropies with name passphrases, three waves (canonical inputs, two-cosigner pairing, typed inputs and cross-passphrase pairing), 8.03e9 pairs",
+      "cost": "about 50 minutes on 8 cores",
       "status": "killed"
     },
     {

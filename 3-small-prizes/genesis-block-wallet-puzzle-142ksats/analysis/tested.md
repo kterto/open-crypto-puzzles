@@ -153,3 +153,24 @@ What this does not cover: a digest input outside the 73 listed (the unanswered o
 question of 2026-09-17 asks the author exactly this: typed text, raw block bytes, a file, or
 something else), a name format outside the 47, a digest algorithm outside the 18, mixing two
 different passphrases or two different paths across the two cosigners, and 24-word mnemonics.
+
+## Pass 4, wave 3: typed inputs and the cross-passphrase pair (2026-09-17)
+
+Waves 1 and 2 hashed the canonical genesis bytes. The author's pending question offers "typed
+text" as the first option for the digest input, and the 2026-08-28 hint says a solver can work
+from The Times rather than from the block, so wave 3 hashes what a person types instead: case
+forms, collapsed spacing, a trailing newline, CRLF, period or space, surrounding quotes, eight
+ways of writing the date, and the block as a hex file with and without a trailing newline. It
+also widens the name formats to 137 and adds the pairing waves 1 and 2 do not cover, two
+different formats of the same name under one entropy, which is what the author's "Perhaps"
+leaves open.
+
+| Hypothesis | Space (N) | Method | Result | Witness | Rate | Date |
+|---|---|---|---|---|---|---|
+| Pass 4 wave 3: 300 typed inputs under 16 digest readings (4,800 distinct entropies), 137 name formats, 36 paths (`m/48'/0'/a'/2'/0/0`, `/0/1` and `m/48'/0'/a'/1'/0/0` for 12 genesis accounts); scheme A pairs two paths under one seed, scheme B pairs two name formats of the same name under one entropy at the 24 native-P2WSH paths | 4,800 entropies, 1,591,661,238 ordered pairs | CPU generation and pairing, `tools/check_digest_model.py --wave 3`, 8 processes, exact 32-byte compare | 0 match | yes: the revealed pair of block 963,629 inserted in the first, middle and last entropy group, re-found 3 of 3 | 1,011,953 ordered pairs/s on an 8-core Apple M-series CPU, 1,573 s | 2026-09-17 |
+
+Scope: the 300 listed typed forms only, 16 of the 18 digest readings (the two byte-offset
+RIPEMD readings were covered over the canonical inputs in waves 1 and 2), 137 name formats,
+12 accounts, script types 1' and 2'. The three waves together test 8,030,920,944 ordered pairs
+of the digest model. The digest input remains the open unknown, and buying it from the author
+is still the cheapest way to close it.

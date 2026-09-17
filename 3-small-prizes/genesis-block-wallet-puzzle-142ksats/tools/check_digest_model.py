@@ -13,7 +13,11 @@ Purpose:
     Wave 1 (--wave 1) pairs keys inside one seed: one digest, one passphrase, two different
     BIP48 paths. Wave 2 (--wave 2) pairs keys across seeds at the same path: two different
     digests, one passphrase, which is the standard two-cosigner reading of "both keys are
-    derived independently from Genesis".
+    derived independently from Genesis". Wave 3 (--wave 3) changes the inputs rather than the
+    pairing: it hashes what a person types instead of the canonical bytes (trailing newline,
+    trailing period, collapsed spacing, case forms, eight ways of writing the date, the block
+    as a hex file), widens the name formats to 137, and adds the one pairing waves 1 and 2 do
+    not cover, two different formats of the same name under one entropy.
 
     The entropy candidates are 16-byte digests of genesis data under 18 digest readings
     (MD5, the 128-bit truncations of SHA-1, SHA-224, SHA-256, double SHA-256, SHA-512,
@@ -29,6 +33,7 @@ Usage (run from this folder):
     python3 tools/check_digest_model.py --count             # sizes only, no derivation
     python3 tools/check_digest_model.py --wave 1 [--procs 8]
     python3 tools/check_digest_model.py --wave 2 [--procs 8]
+    python3 tools/check_digest_model.py --wave 3 [--procs 8]
 
 Input:
     data/genesis-block.hex and the constants below. No network.
@@ -149,6 +154,52 @@ def digests(x: bytes) -> dict[str, bytes]:
     return out
 
 
+WAVE3_DIGESTS = ["md5", "sha256[:16]", "sha256[16:]", "sha256d[:16]", "sha256d[16:]",
+                 "sha1[:16]", "sha1[4:]", "sha512[:16]", "sha512[48:]", "blake2b16",
+                 "blake2s[:16]", "sha3_256[:16]", "shake128", "sha224[:16]",
+                 "ripemd160[:16]", "hash160[:16]"]
+
+T_TEXT = "The Times 03/Jan/2009 Chancellor on brink of second bailout for banks"
+J_TEXT = "Chancellor on brink of second bailout for banks"
+D_TEXT = "The Times 03/Jan/2009"
+DATE_FORMS = ["3/Jan/2009", "03/01/2009", "3/1/2009", "03-Jan-2009", "2009-01-03",
+              "Jan/03/2009", "January 3, 2009", "03/Jan/09"]
+
+
+def typed_variants() -> list[bytes]:
+    """What a person types, rather than the canonical genesis bytes."""
+    bases = [T_TEXT, J_TEXT, D_TEXT]
+    for date in DATE_FORMS:
+        bases.append(T_TEXT.replace("03/Jan/2009", date))
+        bases.append(D_TEXT.replace("03/Jan/2009", date))
+    out = set()
+    for b in bases:
+        for f in [b, b.lower(), b.upper(), b.title(), b.capitalize(),
+                  b.replace(" ", ""), b.replace(" ", "_"), b.replace(" ", "-"),
+                  " ".join(b.split()), b + ".", b + "!", b + " ", " " + b,
+                  b + "\n", b + "\r\n", f'"{b}"', f"'{b}'"]:
+            out.add(f.encode())
+    for blob in (BLOCK.hex(), BLOCK.hex().upper()):
+        out.add(blob.encode())
+        out.add((blob + "\n").encode())
+    out.add(BLOCK)
+    out.add(HEADER)
+    return sorted(out)
+
+
+def wide_names() -> list[str]:
+    out = []
+    for first, last in [("Hal", "Finney"), ("Harold", "Finney"), ("Satoshi", "Nakamoto")]:
+        for c in [f"{first} {last}", f"{last} {first}", first + last, last + first,
+                  f"{first}_{last}", f"{first}-{last}", f"{first}.{last}",
+                  f"{first[0]}{last}", f"{first[0]}. {last}", f"{first[0]}.{last}",
+                  first, last, f"{first} {last} ", f" {first} {last}", f"{first}  {last}"]:
+            out += [c, c.lower(), c.upper(), c.title()]
+    out += ["Harold Thomas Finney II", "Harold T. Finney II", "Hal Finney (1956-2014)",
+            "hal@finney.org", "halfinney", "HalFinney2009", "satoshin@gmx.com"]
+    return list(dict.fromkeys(out))
+
+
 def names() -> list[str]:
     out = []
     for first, last in [("Hal", "Finney"), ("Harold", "Finney"), ("Satoshi", "Nakamoto")]:
@@ -254,9 +305,89 @@ def _wave2(job):
     return npairs, hits, wit
 
 
+NAMES_WIDE = wide_names()
+CORE_KEYS = ("halfinney", "finneyhal", "satoshinakamoto", "nakamotosatoshi",
+             "hal", "finney", "satoshi", "nakamoto")
+CORE_IDX = [i for i, n in enumerate(NAMES_WIDE)
+            if n.lower().replace(" ", "").replace("_", "").replace("-", "").replace(".", "")
+            in CORE_KEYS][:24]
+WAVE3_PATHS = ([(f"m/48\'/0\'/{a}\'/2\'", s) for a in ACCOUNTS if a != 20090103
+                for s in ("0/0", "0/1")] +
+               [(f"m/48\'/0\'/{a}\'/1\'", "0/0") for a in ACCOUNTS if a != 20090103])
+
+
+def _wave3_keys(mnemonic, pw):
+    from bip_utils import Bip39SeedGenerator, Bip32Slip10Secp256k1
+    ctx = Bip32Slip10Secp256k1.FromSeed(Bip39SeedGenerator(mnemonic).Generate(pw))
+    keys, nodes = [], {}
+    for acct, suf in WAVE3_PATHS:
+        try:
+            if acct not in nodes:
+                nodes[acct] = ctx.DerivePath(acct)
+            keys.append(nodes[acct].DerivePath(suf).PublicKey().RawCompressed().ToBytes())
+        except Exception:
+            keys.append(None)
+    return keys
+
+
+def _pair(ks_a, ks_b, same):
+    n, found = 0, []
+    for i, ka in enumerate(ks_a):
+        if not ka:
+            continue
+        pre = b"\x52\x21" + ka + b"\x21"
+        for j, kb in enumerate(ks_b):
+            if not kb or (same and i == j):
+                continue
+            n += 1
+            t = TARGETS.get(hashlib.sha256(pre + kb + b"\x52\xae").digest())
+            if t:
+                found.append((t, i, j))
+    return n, found
+
+
+def _wave3(job):
+    from bip_utils import Bip39MnemonicGenerator
+    ent, label, marked = job
+    mnemonic = str(Bip39MnemonicGenerator().FromEntropy(ent))
+    npairs, hits, wit, cols = 0, [], 0, []
+    for k, pw in enumerate(NAMES_WIDE):
+        ks = _wave3_keys(mnemonic, pw)
+        if marked and k == 0:
+            ks = ks + [oracle.REVEALED_A, oracle.REVEALED_B]
+        cols.append(ks)
+        n, found = _pair(ks, ks, True)
+        npairs += n
+        for t, i, j in found:
+            if t == "WITNESS":
+                wit += 1
+            else:
+                hits.append(("A", label, pw, i, j, mnemonic))
+    b_paths = len([1 for acct, _ in WAVE3_PATHS if acct.endswith("2'")])
+    for ia, a in enumerate(CORE_IDX):
+        for b in CORE_IDX[ia + 1:]:
+            n, found = _pair(cols[a][:b_paths], cols[b][:b_paths], False)
+            npairs += n
+            for t, i, j in found:
+                if t == "WITNESS":
+                    wit += 1
+                else:
+                    hits.append(("B", label, f"{NAMES_WIDE[a]}|{NAMES_WIDE[b]}", i, j, mnemonic))
+    return npairs, hits, wit
+
+
+def wave3_entropies() -> list[tuple[bytes, str]]:
+    ents: dict[bytes, str] = {}
+    for blob in typed_variants():
+        for dname, d in digests(blob).items():
+            if dname in WAVE3_DIGESTS:
+                ents.setdefault(d, f"{dname}({blob[:40]!r})")
+    return list(ents.items())
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--wave", type=int, choices=(1, 2))
+    ap.add_argument("--wave", type=int, choices=(1, 2, 3))
     ap.add_argument("--procs", type=int, default=8)
     ap.add_argument("--count", action="store_true")
     args = ap.parse_args()
@@ -270,16 +401,26 @@ def main():
         n = len(ENTS)
         print(f"wave 2: keys {n * len(NAMES) * len(WAVE2_PATHS):,}, "
               f"ordered pairs {n * (n - 1) * len(NAMES) * len(WAVE2_PATHS):,}")
+        e3, p3, c3 = len(wave3_entropies()), len(WAVE3_PATHS), len(CORE_IDX)
+        b3 = len([1 for acct, _ in WAVE3_PATHS if acct.endswith("2'")])
+        print(f"wave 3: typed inputs {len(typed_variants())}, entropies {e3}, "
+              f"names {len(NAMES_WIDE)}, paths {p3}, ordered pairs "
+              f"{e3 * len(NAMES_WIDE) * p3 * (p3 - 1) + e3 * (c3 * (c3 - 1) // 2) * b3 * b3:,}")
         return 0
 
     if args.wave == 1:
         marks = {0, len(ENTS) // 2, len(ENTS) - 1}
         jobs = [(label, ent, i in marks) for i, (ent, label) in enumerate(ENTS)]
         fn, expected_wit = _wave1, 3 * len(NAMES)
-    else:
+    elif args.wave == 2:
         marks = {0, len(NAMES) // 2, len(NAMES) - 1}
         jobs = [(pw, i in marks) for i, pw in enumerate(NAMES)]
         fn, expected_wit = _wave2, 3 * len(WAVE2_PATHS)
+    else:
+        ents3 = wave3_entropies()
+        marks = {0, len(ents3) // 2, len(ents3) - 1}
+        jobs = [(ent, label, i in marks) for i, (ent, label) in enumerate(ents3)]
+        fn, expected_wit = _wave3, 3
 
     t0, total, wit, allhits = time.time(), 0, 0, []
     with Pool(args.procs) as pool:

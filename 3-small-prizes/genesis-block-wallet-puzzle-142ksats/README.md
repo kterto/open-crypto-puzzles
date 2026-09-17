@@ -212,6 +212,7 @@ windows, readings and derivation paths. Reproduce with `tools/candidates.py --wr
 | Pass 3, the September model (2026-09-12): 12-word BIP39 mnemonic whose entropy is a 16-byte window of genesis data (every window of the raw 285-byte block, of the merkle root and block hash in both byte orders, of the coinbase text, headline, scriptSig, header and coinbase public key, plus the header integers zero-padded and as decimal strings: 329 entropies), 53 passphrases (empty as control, the coinbase text, the headline, The Times, Satoshi, genesis, bitcoin, the header integers, the hashes in hex and a dozen short words from the author's messages), BIP48 `m/48'/0'/a'/s'` with a in {0, 1, 2, 3, 50, 2009, 285, bits, time, nonce} and s in {0', 1', 2'}, suffix empty, /0/0 or /0/1; every ordered pair | 1,569,330 keys, 2.463e12 ordered pairs | CPU BIP39/BIP32 generation (25 s on 22 cores), GPU pairing and SHA-256 (`engines/p2wsh_2of2_pairs.cu`, 4.18e9 pairs/s, 589 s), exact 32-byte compare | 0 match | yes: revealed 2-of-2 pair at head, middle and tail, 9 of 9 ordered combinations re-found, `exhausted=yes` | 2026-09-12 |
 | Pass 4 wave 1, the digest model (2026-09-17): entropy = a 128-bit digest of genesis data (18 digest readings over 73 genesis inputs, 1,278 distinct entropies), 12-word mnemonic, passphrase = one of 47 name formats for Hal Finney, Harold Finney and Satoshi Nakamoto, BIP48 with 13 genesis accounts and script types 0'/1'/2', suffix empty, /0/0, /0/1 or /1/0; both keys from the same seed, every ordered pair inside the seed | 60,066 seeds, 9,370,296 keys, 1,452,484,146 ordered pairs | CPU generation and pairing (`tools/check_digest_model.py --wave 1`), exact 32-byte compare | 0 match | yes: revealed pair in the first, middle and last entropy group, 141 of 141 re-found | 2026-09-17 |
 | Pass 4 wave 2 (2026-09-17): the same entropies and passphrases, two cosigners taken from two different digests at the same path under the same passphrase, 65 paths | 3,904,290 keys, 4,986,775,560 ordered pairs | same pipeline, `--wave 2` | 0 match | yes: revealed pair at the first, middle and last passphrase, 195 of 195 re-found | 2026-09-17 |
+| Pass 4 wave 3 (2026-09-17): 300 typed forms of the coinbase text, the headline and the date line (case, spacing, trailing newline, CRLF, period, quotes, eight date spellings, the block as a hex file) under 16 digest readings, 4,800 entropies, 137 name formats, 36 paths; pairs two paths under one seed and two name formats under one entropy | 4,800 entropies, 1,591,661,238 ordered pairs | same pipeline, `--wave 3` | 0 match | yes: revealed pair in the first, middle and last entropy group, 3 of 3 re-found | 2026-09-17 |
 
 ## Open leads, ranked
 
@@ -230,10 +231,11 @@ windows, readings and derivation paths. Reproduce with `tools/candidates.py --wr
 3. **Pass 5, once the input is known** (minutes). With the input named, the remaining space is
    the name format, which the author says is the brute-force part, and the path. That is a few
    million keys, which this folder's CPU pipeline finishes in minutes.
-4. **Widen the digest inputs** (about 40 minutes on 8 cores). The same model with the text
-   inputs carrying a trailing newline or CRLF, the block as a file rather than as bytes,
-   concatenations of two fields, and the name formats extended with punctuation and reversed
-   order. Cheap, but it guesses at the same unknown lead 1 answers for free.
+4. **Widen the digest inputs further** (hours on 8 cores, low prior). Wave 3 has already
+   taken the typed forms of the three texts, 137 name formats and the cross-passphrase pair,
+   and matched nothing. What is left on this line is concatenations of two genesis fields,
+   the block in other file encodings, and digest functions outside the 18 tested. Each is a
+   guess at the one thing the author sells for 10,000 sats.
 5. **Watch the channel** (minutes). Re-read the escrow before any work: a new OP_RETURN from
    the author's change chain is a new constraint, a spend closes the puzzle. The author's
    current change output at 2026-09-17 is
