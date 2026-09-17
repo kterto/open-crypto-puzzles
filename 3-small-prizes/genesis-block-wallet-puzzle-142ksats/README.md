@@ -24,7 +24,7 @@ bytes. The oracle is exact and offline. Four passes have now been run and none m
 | Prize | 229,724 sats (about $145 at BTC = $63,000, the 2026-08-16 snapshot); 168,779 sats on 2026-09-12 and 142,779 sats on 2026-08-29, growing with each paid question |
 | Chain | bitcoin |
 | Escrow | `bc1qfkhx02v89u2qyyyljeczw6hu9sr437y44t7ae5yf09thrdukfqesnjg2wj` ([explorer](https://mempool.space/address/bc1qfkhx02v89u2qyyyljeczw6hu9sr437y44t7ae5yf09thrdukfqesnjg2wj)) |
-| Last on-chain check | 2026-09-17: funded and unspent, 30 outputs, 0 spent, confirmed on mempool.space with `tools/check_escrows.py` |
+| Last on-chain check | 2026-09-17: funded and unspent, 37 confirmed outputs, 0 spent, confirmed on mempool.space with `tools/check_escrows.py`; one further message output of 1,855 sats was still unconfirmed |
 | Status | OPEN |
 | Puzzle type | multisig, raw-private-key |
 | Target format | P2WSH (v0), witness script `OP_2 <keyA> <keyB> OP_2 OP_CHECKMULTISIG`, both keys derived from one genesis-block field |
@@ -160,9 +160,9 @@ positive. Measured on one CPU core: about 1,200,000 pairs/s once public keys exi
 
 ### Established facts
 
-1. The escrow holds 229,724 sats in 30 unspent outputs as of 2026-09-17, checked on
-   mempool.space (168,779 sats in 24 outputs on 2026-09-12, 142,779 sats in 18 outputs on
-   2026-08-29). The first funding (20,000 sats) confirmed in block
+1. The escrow holds 229,724 sats in 37 unspent confirmed outputs as of 2026-09-17, checked on
+   mempool.space, with one further 1,855-sat output unconfirmed (168,779 sats in 24 outputs on
+   2026-09-12, 142,779 sats in 18 outputs on 2026-08-29). The first funding (20,000 sats) confirmed in block
    963,517 on 2026-08-22 02:45 UTC, 17 hours before the announcement.
 2. Every payment sent with a question ends up in the escrow. Four questions were paid
    directly to the author's change addresses (12,909, 32,357, 6,465 and 12,963 sats); the

@@ -4195,7 +4195,7 @@
         "asset": "sats",
         "usd_estimate": 145,
         "usd_snapshot": "2026-08-16",
-        "note": "30 P2WSH outputs to one witness script; the jackpot grows because the author relays every paid question into the escrow (125,779 sats on 2026-08-24, 142,779 on 2026-08-29, 168,779 on 2026-09-12, 229,724 on 2026-09-17)"
+        "note": "37 P2WSH outputs to one witness script; the jackpot grows because the author relays every paid question into the escrow (125,779 sats on 2026-08-24, 142,779 on 2026-08-29, 168,779 on 2026-09-12, 229,724 on 2026-09-17)"
       },
       "addresses": [
         {
@@ -4204,7 +4204,7 @@
           "role": "escrow",
           "label": "main (P2WSH, witness program 4dae67a9872f1402109f9670276afc2c0758f895aafddcd089795771b7964833)",
           "explorer": "https://mempool.space/address/bc1qfkhx02v89u2qyyyljeczw6hu9sr437y44t7ae5yf09thrdukfqesnjg2wj",
-          "expected": "229724 sats in 30 outputs, growing",
+          "expected": "229724 sats in 37 confirmed outputs, growing",
           "verified_on": "2026-09-17",
           "verified_state": "funded-unspent"
         }
