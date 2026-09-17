@@ -84,7 +84,7 @@ FORBIDDEN_WORDS = [
 ]
 
 # Files allowed to name AI/agent tools (blueprint section 9 check 4 exceptions).
-WORD_CHECK_TOOL_NAME_EXCEPTIONS = {"AGENTS.md", "CONTRIBUTING.md"}
+WORD_CHECK_TOOL_NAME_EXCEPTIONS = {"AGENTS.md", "CONTRIBUTING.md", "CLAUDE.md"}
 
 # Meta-documentation that must quote the forbidden words themselves to document the rule,
 # and templates that hold placeholder text. Excluded from the forbidden-words content scan;
