@@ -55,6 +55,19 @@ The escrow had been funded with 20,000 sats 17 hours earlier
 | 2026-09-10 21:33:46 | 966,409 | `cb47c7a73c1aaa11bfe0edce41c2ef7c9c1fec1478efd15e40b226eb502dcc18` | author | 2,000 sats | root = the master key derived from the BIP39 seed; genesis_data = some data from the genesis block used as the BIP48 account number. |
 | 2026-09-11 21:25:51 | 966,565 | `6497aef4be0d5be68644296d5fcdb709c66bb20db5972f4e53f90836e27862fe` | player 4 | 10,000 sats | BIP39 entropy: genesis bytes/puzzle text/img/other? words 12/24? passphrase Y/N? |
 | 2026-09-11 23:26:17 | 966,576 | `f8f04fc04e2c4f34dc2264f85ff7944c6aa822446bc4cc082e95a52aed5c2a4c` | author | 2,000 sats | BIP39: 12 words; Passphrase: Y; Entropy: The data needed to solve it is publicly available in the genesis block. |
+| 2026-09-14 13:01 | 966,966 | `e43647274f672f9b4eb42fff1d15f2afcaa8bfd4650823403a18a76774999169` | player 5 | 10,000 sats | Passphrase: genesis data or your own word? How long? What built the wallet? |
+| 2026-09-14 16:15 | 966,989 | `a137a898ab56180d6e9ebac602377a120511acdec0b4ebe4e806536652d3b32d` | author | 2,000 sats | Passphrase: Who received the first transaction? That's all I've got to say. What built the wallet are the tools that support BIPs 32, 39, and 48. |
+| 2026-09-15 01:30 | 967,051 | `af08a3d048ac44c5888767890532c68b5004e44a2025daf0cbbbb8281a6ee9d9` | player 6 | 4,500 sats | Passphrase sha256 first 8 hex? Entropy: raw 16B slice of Times or sha256? |
+| 2026-09-15 03:19 | 967,064 | `a3878ff0c813a726c755e5b1220b69dc3528989fea1095041a8edadefc269fc4` | author | 2,000 sats | No, the passphrase is a name. The entropy isn't the raw 16 bytes. |
+| 2026-09-15 09:34 | 967,106 | `b073a2ef7a9a51e8431d48315bfe9f1804a34f5169cae4678af9d92a03860a7b` | player 5 | 10,000 sats | Do both cosigners use the same 12 words and the same passphrase? |
+| 2026-09-15 14:31 | 967,135 | `fafdcd55a566ccebe3944b3a4cb3d4d04ced285a4b9aa3da0ccd2279eee57dad` | player 5 | 5,000 sats | Were the 12 words generated from entropy, or chosen directly as words? |
+| 2026-09-15 15:22 | 967,140 | `96861335409aa5dd85cc03734191832dfb5e5ff1476d4005ccdb69c286217fcf` | author | 1,784 sats | Perhaps... but figuring that out is part of the puzzle. The 12 words were generated from entropy. |
+| 2026-09-16 09:02 | 967,260 | `de3c7aba7b3b8d3650c339041579158125546ff9d3bcfeef02fefe489a73e4d0` | player 5 | 5,000 sats | Is the 128-bit entropy a zero-padded number, a digest, or neither? |
+| 2026-09-16 12:40 | 967,281 | `e38caf86a0d304a4d8a10e023e75626387dbce287847d46076a48bf60be82ca2` | author | 1,848 sats | It's a 128-bit digest. |
+| 2026-09-17 07:34 | 967,379 | `530490fd94eb76e368a0eff96db87cb1bb74ac1027aa97765a34508d877c4de4` | player 5 | 4,000 sats | Passphrase fmt: first/full/middle name? spaced/joined? lower/UPPER/Capitalized? |
+| 2026-09-17 08:02 | 967,383 | `ec08d0014b545776344e84214c82d556e25f11eb91f5764fc2b5b3b18faf4c99` | author | 1,813 sats | Passphrase: You'll have to discover the fmt through brute force. The key question greatly narrows the search space. |
+| 2026-09-17 10:44 | 967,396 | `a347081cb74dd40f1a7cbe4a5dcb6f8f8a79d526cd07141c80a85e6ab6eec26e` | player 5 | 3,000 sats | Digest input: typed text, raw block bytes, a file, or something else? |
+| 2026-09-17 16:05 | unconfirmed | `5659ab70213e2e5b6811cdecf421e158d810617d765fa725ff80f20e0b9684fb` | author | 1,855 sats | Digest input: typed text or raw block bytes... (newline) I don't know... my memory's not that great. Maybe you could refresh it for me? (youtube.com/shorts/e_8s8fn93Ww) |
 
 The three relayed questions were first paid by player 1 directly to the author's change
 address of the moment, off the escrow's history: 32,357 sats on 2026-08-23 16:20:06
@@ -66,3 +79,26 @@ to the author (12,909 sats, `1b4bde84af7df419`, 14:34:56) and once to the escrow
 Player 4's two questions (2026-09-10 and 2026-09-11, 10,000 sats each) are, word for word, the
 draft questions written in this folder's `analysis/leads.md` on 2026-08-29. I did not send them;
 a reader did, and the author answered both within the hour.
+
+
+The 2026-09-14 to 2026-09-17 exchange is attributed from the transaction inputs. The author
+spends a chain of P2WPKH change outputs, one per message:
+`bc1qw720l9e6g4a675vfraghzm93gvyw8s2fjgtdxy` to `bc1qv7ezkqngwaeutstj8prd9wjk7w26j44sxxljry`
+to `bc1qqenp579zef3fpetekf424w9hk6eadlz0lpmtja` to `bc1q6suweqz66uwhnpedulfwkmvn8lu06elyftzytq`
+to `bc1q5eg4w0ewlhvm92kv694v5slldy62kjjpzzyewm` to `bc1qnsk37lnc9unj4d4jjq5j3nh5u88dvfltv9r7xr`,
+which is the author's current change output and is unspent at 2026-09-17 15:30 UTC. Player 5
+spends a chain of P2TR outputs starting at `bc1qdu8mh9qjtjhy89mvhmcgf66ul6ld92rdr6qzad` and
+has 34,970 sats left in `bc1prp6jmy2u5qy28u6z9jzfevpr4lv4sv2dzuvkzsv38apa8nznd70q0snce5`.
+Player 6 appears once, from `bc1qcw0yf68uxk0pj3p3fuepvsujevfy0uzwaul4vq`.
+
+The 2026-09-15 15:22 answer covers the two questions player 5 had sent before it: "Perhaps"
+answers whether both cosigners share the 12 words and the passphrase, and the second clause
+answers whether the words were generated from entropy.
+
+The 2026-09-17 16:05 message was unconfirmed when I recorded it; it spends the author's change
+output `bc1qnsk37lnc9unj4d4jjq5j3nh5u88dvfltv9r7xr`, which is what attributes it to the author.
+The linked video is the "I don't know, my memory ain't so great" scene from The Naked Gun
+(1988), in which the memory is refreshed by a payment. Read together with the author's standing
+rule that "Larger payments receive better hints" and the 2026-09-06 message that "Low-value
+transactions get bad hints", the answer to player 5's 3,000-sat question is a request for a
+larger payment, not a statement about the digest input.

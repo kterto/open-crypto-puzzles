@@ -1,0 +1,306 @@
+#!/usr/bin/env python3
+"""
+check_digest_model.py -- pass 4 and pass 5, the model the author described between
+2026-09-14 and 2026-09-17.
+
+Purpose:
+    The author's answers of 2026-09-15 and 2026-09-16 state that the BIP39 entropy "isn't
+    the raw 16 bytes" but "a 128-bit digest", and that the passphrase "is a name", the name
+    of whoever received the first transaction, in a format that has to be found by brute
+    force. This script enumerates that model and checks every ordered pair of keys it
+    produces against the escrow's witness program, exactly, with no network access.
+
+    Wave 1 (--wave 1) pairs keys inside one seed: one digest, one passphrase, two different
+    BIP48 paths. Wave 2 (--wave 2) pairs keys across seeds at the same path: two different
+    digests, one passphrase, which is the standard two-cosigner reading of "both keys are
+    derived independently from Genesis".
+
+    The entropy candidates are 16-byte digests of genesis data under 18 digest readings
+    (MD5, the 128-bit truncations of SHA-1, SHA-224, SHA-256, double SHA-256, SHA-512,
+    RIPEMD-160, HASH160, SHA3-256, BLAKE2b, BLAKE2s and SHAKE-128) over 73 genesis inputs
+    (the coinbase text, the headline, the scriptSig, the raw block, the header, the coinbase
+    transaction, the public key, the merkle root and block hash in both byte orders, the
+    address, the header integers, each also in lower and upper-case hex).
+
+    The passphrase candidates are 47 name formats for Hal Finney, Harold Finney and Satoshi
+    Nakamoto (spaced, joined, separated, initial, lower, upper and capitalized).
+
+Usage (run from this folder):
+    python3 tools/check_digest_model.py --count             # sizes only, no derivation
+    python3 tools/check_digest_model.py --wave 1 [--procs 8]
+    python3 tools/check_digest_model.py --wave 2 [--procs 8]
+
+Input:
+    data/genesis-block.hex and the constants below. No network.
+
+Output:
+    Progress lines, then one summary line: ordered pairs tested, rate, witness re-found
+    count, escrow matches. Exit 0 on a match, 1 on a certified negative, 2 if the witness
+    was not re-found (an uncertified run).
+
+Witness:
+    The 2-of-2 pair revealed in block 963,629 is inserted into three of the groups (first,
+    middle, last) and its own witness program is a second target. A run that does not
+    re-find it in every marked group is reported as uncertified.
+
+Dependencies: stdlib, bip_utils. Reuses oracle.py from this folder.
+"""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import os
+import sys
+import time
+from multiprocessing import Pool
+
+FOLDER = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(FOLDER, "tools"))
+
+import oracle  # noqa: E402
+
+WITNESS_PROGRAM = oracle.program(oracle.witness_script(oracle.REVEALED_A, oracle.REVEALED_B))
+TARGETS = {oracle.TARGET_PROGRAM: "ESCROW", WITNESS_PROGRAM: "WITNESS"}
+
+BLOCK = bytes.fromhex(open(os.path.join(FOLDER, "data", "genesis-block.hex")).read().split()[0])
+HEADER = BLOCK[:80]
+COINBASE_TX = BLOCK[81:]
+T = b"The Times 03/Jan/2009 Chancellor on brink of second bailout for banks"
+J = b"Chancellor on brink of second bailout for banks"
+S = bytes.fromhex("04ffff001d0104") + bytes([0x45]) + T
+MERKLE_BE = bytes.fromhex("4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b")
+HASH_BE = bytes.fromhex("000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f")
+PUBKEY = bytes.fromhex(
+    "04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb"
+    "649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f")
+ADDRESS = b"1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"
+NONCE, TIME, BITS, VERSION = 2083236893, 1231006505, 486604799, 1
+
+ACCOUNTS = [0, 1, 2, 3, 50, 170, 285, 2009, 20090103, 3012009, 1231006505, 2083236893, 486604799]
+SCRIPTS = [0, 1, 2]
+SUFFIXES = [None, (0, 0), (0, 1), (1, 0)]
+
+WAVE2_PATHS = []
+for _a in ACCOUNTS:
+    for _s in SCRIPTS:
+        WAVE2_PATHS.append((f"m/48'/0'/{_a}'/{_s}'", "0/0"))
+    WAVE2_PATHS.append((f"m/48'/0'/{_a}'/2'", "0/1"))
+    WAVE2_PATHS.append((f"m/48'/0'/{_a}'/2'", "1/0"))
+
+
+def inputs() -> dict[str, bytes]:
+    out: dict[str, bytes] = {}
+
+    def add(name, b):
+        if b:
+            out[name] = b
+
+    for name, b in [("T", T), ("J", J), ("S", S), ("block", BLOCK), ("header", HEADER),
+                    ("coinbase_tx", COINBASE_TX), ("pubkey", PUBKEY), ("pubkey_x", PUBKEY[1:33]),
+                    ("merkle_be", MERKLE_BE), ("merkle_le", MERKLE_BE[::-1]),
+                    ("hash_be", HASH_BE), ("hash_le", HASH_BE[::-1]),
+                    ("prevhash", bytes(32)), ("address", ADDRESS)]:
+        add(name, b)
+        add(name + "_hex", b.hex().encode())
+        add(name + "_HEX", b.hex().upper().encode())
+    for name, b in [("T_lower", T.lower()), ("T_upper", T.upper()), ("J_lower", J.lower()),
+                    ("J_upper", J.upper()), ("T_nospace", T.replace(b" ", b"")),
+                    ("J_nospace", J.replace(b" ", b"")), ("T32", T[:32]), ("T16", T[:16]),
+                    ("J32", J[:32]), ("times", b"The Times"),
+                    ("times_date", b"The Times 03/Jan/2009")]:
+        add(name, b)
+    for name, v in [("nonce", NONCE), ("time", TIME), ("bits", BITS), ("version", VERSION),
+                    ("height", 0), ("reward", 50)]:
+        add(name + "_dec", str(v).encode())
+        add(name + "_be4", v.to_bytes(4, "big"))
+        add(name + "_le4", v.to_bytes(4, "little"))
+    add("bits_hex", b"1d00ffff")
+    add("date", b"03/Jan/2009")
+    return out
+
+
+def digests(x: bytes) -> dict[str, bytes]:
+    sha256 = hashlib.sha256(x).digest()
+    sha256d = hashlib.sha256(sha256).digest()
+    sha1 = hashlib.sha1(x).digest()
+    sha512 = hashlib.sha512(x).digest()
+    out = {
+        "md5": hashlib.md5(x).digest(),
+        "sha256[:16]": sha256[:16], "sha256[16:]": sha256[16:],
+        "sha256d[:16]": sha256d[:16], "sha256d[16:]": sha256d[16:],
+        "sha1[:16]": sha1[:16], "sha1[4:]": sha1[4:],
+        "sha512[:16]": sha512[:16], "sha512[48:]": sha512[48:],
+        "blake2b16": hashlib.blake2b(x, digest_size=16).digest(),
+        "blake2s[:16]": hashlib.blake2s(x).digest()[:16],
+        "sha3_256[:16]": hashlib.sha3_256(x).digest()[:16],
+        "shake128": hashlib.shake_128(x).digest(16),
+        "sha224[:16]": hashlib.sha224(x).digest()[:16],
+    }
+    try:
+        rmd = hashlib.new("ripemd160", x).digest()
+        h160 = hashlib.new("ripemd160", sha256).digest()
+        out["ripemd160[:16]"] = rmd[:16]
+        out["ripemd160[4:]"] = rmd[4:]
+        out["hash160[:16]"] = h160[:16]
+        out["hash160[4:]"] = h160[4:]
+    except ValueError:
+        pass
+    return out
+
+
+def names() -> list[str]:
+    out = []
+    for first, last in [("Hal", "Finney"), ("Harold", "Finney"), ("Satoshi", "Nakamoto")]:
+        full = f"{first} {last}"
+        out += [full, full.lower(), full.upper(), first + last, (first + last).lower(),
+                (first + last).upper(), first, first.lower(), last, last.lower(), last.upper(),
+                f"{first}_{last}", f"{first}-{last}", f"{first.lower()}_{last.lower()}",
+                f"{first.lower()}.{last.lower()}", f"{first[0]}{last}", f"{first[0]}. {last}"]
+    out += ["Harold Thomas Finney II", "Hal", "finney", "satoshi", "Satoshi", "nakamoto"]
+    return list(dict.fromkeys(out))
+
+
+NAMES = names()
+
+
+def entropies() -> list[tuple[bytes, str]]:
+    ents: dict[bytes, str] = {}
+    for iname, ib in inputs().items():
+        for dname, d in digests(ib).items():
+            ents.setdefault(d, f"{dname}({iname})")
+    return list(ents.items())
+
+
+ENTS = entropies()
+
+
+def _wave1(job):
+    from bip_utils import Bip39MnemonicGenerator, Bip39SeedGenerator, Bip32Slip10Secp256k1
+    label, entropy, marked = job
+    mnemonic = str(Bip39MnemonicGenerator().FromEntropy(entropy))
+    hits, npairs, wit = [], 0, 0
+    for pw in NAMES:
+        ctx = Bip32Slip10Secp256k1.FromSeed(Bip39SeedGenerator(mnemonic).Generate(pw))
+        keys, paths = [], []
+        for a in ACCOUNTS:
+            for s in SCRIPTS:
+                try:
+                    node = ctx.DerivePath(f"m/48'/0'/{a}'/{s}'")
+                except Exception:
+                    continue
+                for suf in SUFFIXES:
+                    try:
+                        n = node if suf is None else node.DerivePath(f"{suf[0]}/{suf[1]}")
+                    except Exception:
+                        continue
+                    keys.append(n.PublicKey().RawCompressed().ToBytes())
+                    paths.append(f"m/48'/0'/{a}'/{s}'" +
+                                 ("" if suf is None else f"/{suf[0]}/{suf[1]}"))
+        if marked:
+            keys += [oracle.REVEALED_A, oracle.REVEALED_B]
+            paths += ["WITNESS_A", "WITNESS_B"]
+        for i, ka in enumerate(keys):
+            pre = b"\x52\x21" + ka + b"\x21"
+            for j, kb in enumerate(keys):
+                if i == j:
+                    continue
+                npairs += 1
+                found = TARGETS.get(hashlib.sha256(pre + kb + b"\x52\xae").digest())
+                if found == "WITNESS":
+                    wit += 1
+                elif found:
+                    hits.append((label, pw, paths[i], paths[j], ka.hex(), kb.hex(), mnemonic))
+    return npairs, hits, wit
+
+
+def _wave2(job):
+    from bip_utils import Bip39MnemonicGenerator, Bip39SeedGenerator, Bip32Slip10Secp256k1
+    pw, marked = job
+    cols = {p: [] for p in WAVE2_PATHS}
+    labels = []
+    for ent, label in ENTS:
+        mnemonic = str(Bip39MnemonicGenerator().FromEntropy(ent))
+        ctx = Bip32Slip10Secp256k1.FromSeed(Bip39SeedGenerator(mnemonic).Generate(pw))
+        labels.append(label)
+        nodes = {}
+        for acct, suf in WAVE2_PATHS:
+            try:
+                if acct not in nodes:
+                    nodes[acct] = ctx.DerivePath(acct)
+                cols[(acct, suf)].append(nodes[acct].DerivePath(suf).PublicKey()
+                                         .RawCompressed().ToBytes())
+            except Exception:
+                cols[(acct, suf)].append(None)
+    hits, npairs, wit = [], 0, 0
+    for path, col in cols.items():
+        keys = [k for k in col if k]
+        lab = [labels[i] for i, k in enumerate(col) if k]
+        if marked:
+            keys += [oracle.REVEALED_A, oracle.REVEALED_B]
+            lab += ["WITNESS_A", "WITNESS_B"]
+        for i, ka in enumerate(keys):
+            pre = b"\x52\x21" + ka + b"\x21"
+            for j, kb in enumerate(keys):
+                if i == j:
+                    continue
+                npairs += 1
+                found = TARGETS.get(hashlib.sha256(pre + kb + b"\x52\xae").digest())
+                if found == "WITNESS":
+                    wit += 1
+                elif found:
+                    hits.append((pw, f"{path[0]}/{path[1]}", lab[i], lab[j],
+                                 ka.hex(), kb.hex()))
+    return npairs, hits, wit
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--wave", type=int, choices=(1, 2))
+    ap.add_argument("--procs", type=int, default=8)
+    ap.add_argument("--count", action="store_true")
+    args = ap.parse_args()
+
+    per_seed = len(ACCOUNTS) * len(SCRIPTS) * len(SUFFIXES)
+    seeds = len(ENTS) * len(NAMES)
+    if args.count or not args.wave:
+        print(f"inputs {len(inputs())}, entropies {len(ENTS)}, passphrases {len(NAMES)}")
+        print(f"wave 1: seeds {seeds:,}, keys {seeds * per_seed:,}, "
+              f"ordered pairs {seeds * per_seed * (per_seed - 1):,}")
+        n = len(ENTS)
+        print(f"wave 2: keys {n * len(NAMES) * len(WAVE2_PATHS):,}, "
+              f"ordered pairs {n * (n - 1) * len(NAMES) * len(WAVE2_PATHS):,}")
+        return 0
+
+    if args.wave == 1:
+        marks = {0, len(ENTS) // 2, len(ENTS) - 1}
+        jobs = [(label, ent, i in marks) for i, (ent, label) in enumerate(ENTS)]
+        fn, expected_wit = _wave1, 3 * len(NAMES)
+    else:
+        marks = {0, len(NAMES) // 2, len(NAMES) - 1}
+        jobs = [(pw, i in marks) for i, pw in enumerate(NAMES)]
+        fn, expected_wit = _wave2, 3 * len(WAVE2_PATHS)
+
+    t0, total, wit, allhits = time.time(), 0, 0, []
+    with Pool(args.procs) as pool:
+        for k, (npairs, hits, w) in enumerate(pool.imap_unordered(fn, jobs, chunksize=1)):
+            total += npairs
+            wit += w
+            for h in hits:
+                allhits.append(h)
+                print("MATCH", h, flush=True)
+            if k % 25 == 0:
+                el = time.time() - t0
+                print(f"  {k}/{len(jobs)} groups, {total:,} pairs, "
+                      f"{int(total / max(el, 1)):,}/s, {el:.0f}s", flush=True)
+    el = time.time() - t0
+    print(f"done: {total:,} ordered pairs in {el:.0f}s ({int(total / el):,}/s)")
+    print(f"witness re-found {wit} of {expected_wit} expected")
+    print(f"escrow matches: {len(allhits)}")
+    if allhits:
+        return 0
+    return 1 if wit == expected_wit else 2
+
+
+if __name__ == "__main__":
+    sys.exit(main())

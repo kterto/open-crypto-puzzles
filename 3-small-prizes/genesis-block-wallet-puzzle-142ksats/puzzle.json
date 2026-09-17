@@ -17,11 +17,11 @@
   },
   "chain": "bitcoin",
   "prize": {
-    "amount": 168779,
+    "amount": 229724,
     "asset": "sats",
-    "usd_estimate": 106,
+    "usd_estimate": 145,
     "usd_snapshot": "2026-08-16",
-    "note": "24 P2WSH outputs to one witness script; the jackpot grows because the author relays every paid question into the escrow (125,779 sats on 2026-08-24, 142,779 on 2026-08-29, 168,779 on 2026-09-12)"
+    "note": "30 P2WSH outputs to one witness script; the jackpot grows because the author relays every paid question into the escrow (125,779 sats on 2026-08-24, 142,779 on 2026-08-29, 168,779 on 2026-09-12, 229,724 on 2026-09-17)"
   },
   "addresses": [
     {
@@ -30,8 +30,8 @@
       "role": "escrow",
       "label": "main (P2WSH, witness program 4dae67a9872f1402109f9670276afc2c0758f895aafddcd089795771b7964833)",
       "explorer": "https://mempool.space/address/bc1qfkhx02v89u2qyyyljeczw6hu9sr437y44t7ae5yf09thrdukfqesnjg2wj",
-      "expected": "168779 sats in 24 outputs, growing",
-      "verified_on": "2026-09-12",
+      "expected": "229724 sats in 30 outputs, growing",
+      "verified_on": "2026-09-17",
       "verified_state": "funded-unspent"
     }
   ],
@@ -39,53 +39,71 @@
     "multisig",
     "raw-private-key"
   ],
-  "target_format": "P2WSH v0; witness script OP_2 <keyA> <keyB> OP_2 OP_CHECKMULTISIG; both keys derived from one genesis-block field (reported: the coinbase text) without hashing; the author's derivation rule names the BIP48 levels m/48'/0'/account'/script_type'",
+  "target_format": "P2WSH v0; witness script OP_2 <keyA> <keyB> OP_2 OP_CHECKMULTISIG; both keys derived from genesis data through a 12-word BIP39 mnemonic whose entropy is a 128-bit digest, with a name as passphrase, along BIP48 m/48'/0'/account'/script_type' with a genesis value as account",
   "derivation": {
-    "summary": "derive two secp256k1 keys from one field of the genesis block (author's hints: the coinbase text readable in The Times, no hash, keys independent, a BIP48-shaped path with a genesis value as account), build the 2-of-2 witness script in either key order, sha256 it, and compare with the published 32-byte witness program",
+    "summary": "build a 12-word BIP39 mnemonic from a 128-bit digest of genesis data, add the passphrase (the name of whoever received the first transaction, in an undisclosed format), derive along BIP48 m/48'/0'/account'/script_type' with a genesis value as account, build the 2-of-2 witness script in either key order, sha256 it, and compare with the published 32-byte witness program",
     "oracle": "tools/oracle.py",
     "oracle_certified": true,
     "certified_against": "the BIP-173 P2WSH test vector, and a real 2-of-2 P2WSH spent in block 963629 (tx 47ded3504e855ce418e46eeca4694b55a623d1e23a8e3c83292abbcf9cee9f7a, input 0) whose revealed keys rebuild the script and hash to the spent address; private key 1 to the generator point; negative control against the escrow"
   },
   "difficulty_left": "insight",
-  "difficulty_note": "the lock is fully characterized (2-of-2 P2WSH, exact offline oracle) and the corpus is 285 public bytes; passes 1 and 2 (2026-08-29) exhausted the mechanical readings of the August hints (611,008 keys, 5.7e11 ordered pairs, 0 match with witnesses); the author's answers of 2026-09-10 and 2026-09-11, bought by a reader with the questions drafted here, name the root: a 12-word BIP39 mnemonic with entropy taken from the genesis block, a passphrase, and a genesis value as the BIP48 account; pass 3 (2026-09-12, 1.57 million keys, 2.46e12 pairs, witnesses re-found) shows the passphrase is none of 53 obvious readings of the block; it is the one thing the author has not described",
+  "difficulty_note": "the lock is fully characterized (2-of-2 P2WSH, exact offline oracle) and the corpus is 285 public bytes; passes 1 and 2 (2026-08-29) exhausted the mechanical readings of the August hints, pass 3 (2026-09-12) killed the raw 16-byte window model, and the author confirmed on 2026-09-15 that the entropy is not the raw 16 bytes but a 128-bit digest and that the passphrase is a name, the name of whoever received the first transaction; pass 4 (2026-09-17, 6.44e9 ordered pairs over 1,278 digests and 47 name formats, witnesses re-found) shows the digest input is none of the 73 obvious genesis readings; a question asking the author which input is hashed is unanswered on chain",
   "tested_total": {
-    "candidates": 573973795610,
-    "families": 8,
+    "candidates": 580413055316,
+    "families": 10,
     "certified": true
   },
   "leads": [
     {
       "rank": 1,
-      "title": "ask the author about the passphrase's nature on chain (79-byte draft in the README); pass 3 shows it is none of 53 obvious readings of the block",
-      "cost": "needs-a-person",
+      "title": "read the author's answer to the unanswered on-chain question of 2026-09-17 about which input is hashed into the 128-bit entropy",
+      "cost": "minutes",
       "status": "open"
     },
     {
       "rank": 2,
-      "title": "pass 3 wave 2: text variants and every coinbase-text substring as passphrase",
-      "cost": "minutes on one rented GPU",
+      "title": "ask the author on chain which 128-bit digest function and which genesis bytes (76-byte draft in the README)",
+      "cost": "needs-a-person",
       "status": "open"
     },
     {
       "rank": 3,
-      "title": "watch the escrow for new OP_RETURN hints or a spend before any work",
+      "title": "pass 5 once the digest input is named: enumerate the name formats and the BIP48 paths against it",
       "cost": "minutes",
       "status": "open"
     },
     {
       "rank": 4,
+      "title": "widen the digest inputs (trailing newline and file forms, concatenated fields) and the name formats",
+      "cost": "about 40 minutes on 8 cores",
+      "status": "open"
+    },
+    {
+      "rank": 5,
+      "title": "watch the escrow for new OP_RETURN hints or a spend before any work",
+      "cost": "minutes",
+      "status": "open"
+    },
+    {
+      "rank": 6,
+      "title": "pass 4: 128-bit digest entropies (18 readings over 73 genesis inputs) with 47 name passphrases, both cosigner readings (6.44e9 pairs)",
+      "cost": "26 minutes on 8 cores",
+      "status": "killed"
+    },
+    {
+      "rank": 7,
       "title": "pass 3: 16-byte genesis windows as 12-word entropy, 53 passphrases, genesis integers as BIP48 account, script types 0/1/2, keys paired (2.46e12 pairs)",
       "cost": "minutes",
       "status": "killed"
     },
     {
-      "rank": 5,
+      "rank": 8,
       "title": "pass 2: library-specific roots (hashed roots, raw 64-byte extended key, raw key with zero chain code) along the same 214 paths",
       "cost": "minutes",
       "status": "killed"
     },
     {
-      "rank": 6,
+      "rank": 9,
       "title": "pass 1: literal readings of the 2026-08-28 hints, families A to D",
       "cost": "minutes",
       "status": "killed"
@@ -103,7 +121,7 @@
     {
       "title": "Escrow address and full on-chain dialogue",
       "url": "https://mempool.space/address/bc1qfkhx02v89u2qyyyljeczw6hu9sr437y44t7ae5yf09thrdukfqesnjg2wj",
-      "date": "2026-08-29",
+      "date": "2026-09-17",
       "archived": null
     },
     {
@@ -132,5 +150,5 @@
     }
   ],
   "third_party_material": "none: the genesis block and the author's OP_RETURN messages are public chain data; press articles are linked, not reproduced",
-  "last_updated": "2026-09-12"
+  "last_updated": "2026-09-17"
 }

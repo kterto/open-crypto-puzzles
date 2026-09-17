@@ -116,3 +116,40 @@ After the author's answers of 2026-09-10 and 2026-09-11 (12 words, a passphrase,
 | Pass 3, the September model (2026-09-12): 12-word BIP39 mnemonic whose entropy is a 16-byte window of genesis data (every window of the raw 285-byte block, of the merkle root and block hash in both byte orders, of the coinbase text, headline, scriptSig, header and coinbase public key, plus the header integers zero-padded and as decimal strings: 329 entropies), 53 passphrases (empty as control, the coinbase text, the headline, The Times, Satoshi, genesis, bitcoin, the header integers, the hashes in hex and a dozen short words from the author's messages), BIP48 `m/48'/0'/a'/s'` with a in {0, 1, 2, 3, 50, 2009, 285, bits, time, nonce} and s in {0', 1', 2'}, suffix empty, /0/0 or /0/1; every ordered pair | 1,569,330 keys, 2.463e12 ordered pairs | CPU BIP39/BIP32 generation (25 s on 22 cores), GPU pairing and SHA-256 (`engines/p2wsh_2of2_pairs.cu`, 4.18e9 pairs/s, 589 s), exact 32-byte compare | 0 match | yes: revealed 2-of-2 pair at head, middle and tail, 9 of 9 ordered combinations re-found, `exhausted=yes` | 2026-09-12 |
 
 Scope: only 12-word mnemonics, only the listed entropy windows, only the 53 listed passphrases, only the listed accounts and script types, compressed keys. Under that model the passphrase is not among the obvious readings of the block. Not covered: a passphrase outside the list (the one thing the author has not described), 24 words, other accounts, non-BIP48 paths.
+
+## Pass 4, the digest model, wave 1 (2026-09-17)
+
+The author's answers of 2026-09-14 to 2026-09-17 replace the raw-window model that pass 3
+tested: the entropy "isn't the raw 16 bytes", it is "a 128-bit digest"; the passphrase "is a
+name", the name of whoever received the first transaction, in a format the author says has to
+be found by brute force; the 12 words "were generated from entropy"; the wallet was built with
+"the tools that support BIPs 32, 39, and 48". Wave 1 tests that model with both cosigner keys
+coming from one seed and differing by BIP48 path.
+
+| Hypothesis | Space (N) | Method | Result | Witness | Rate | Date |
+|---|---|---|---|---|---|---|
+| Pass 4 wave 1: entropy = a 128-bit digest of genesis data (18 digest readings, md5 plus the 128-bit truncations of sha1, sha224, sha256, sha256d, sha512, ripemd160, hash160, sha3-256, blake2b, blake2s and shake-128, over 73 genesis inputs: the coinbase text, headline, scriptSig, raw block, header, coinbase transaction, public key, merkle root and block hash in both byte orders, the coinbase address, the header integers, each also as lower and upper-case hex; 1,278 distinct entropies), 12-word BIP39 mnemonic, passphrase = one of 47 name formats for Hal Finney, Harold Finney and Satoshi Nakamoto, BIP48 `m/48'/0'/a'/s'` with a in {0, 1, 2, 3, 50, 170, 285, 2009, 20090103, 3012009, time, nonce, bits} and s in {0', 1', 2'}, suffix empty, /0/0, /0/1 or /1/0; both keys from the same seed, every ordered pair inside each seed | 60,066 seeds, 9,370,296 keys, 1,452,484,146 ordered pairs | CPU BIP39/BIP32 generation and pairing, `tools/check_digest_model.py --wave 1`, 8 processes, exact 32-byte compare against the escrow witness program | 0 match | yes: the revealed 2-of-2 pair of block 963,629 inserted in the first, middle and last entropy group, re-found 141 of 141 times (3 groups x 47 passphrases, one valid key order each) | 2,873,073 ordered pairs/s on an 8-core Apple M-series CPU, 506 s | 2026-09-17 |
+
+Scope: only 12-word mnemonics, only the 1,278 listed digests, only the 47 listed name formats,
+only the listed BIP48 accounts and script types, compressed keys, both keys from one seed. Not
+covered by this wave: two keys from two different digests (wave 2 below), a digest input not in
+the list of 73, a name format outside the 47, and any digest of a file rather than of the
+genesis data itself.
+
+## Pass 4, the digest model, wave 2 (2026-09-17)
+
+Wave 1 assumed both cosigner keys come from one seed. Wave 2 covers the other reading of
+"both keys are derived independently from Genesis": two different 128-bit digests, two
+mnemonics, the same name passphrase and the same path, which is how two cosigners of one
+BIP48 multisig wallet are normally set up. The author answered "Perhaps" when asked whether
+both cosigners share the words and the passphrase, so neither reading can be dropped.
+
+| Hypothesis | Space (N) | Method | Result | Witness | Rate | Date |
+|---|---|---|---|---|---|---|
+| Pass 4 wave 2: the same 1,278 digest entropies and 47 name formats as wave 1, keys taken at 65 paths (`m/48'/0'/a'/s'/0/0` for the 13 genesis accounts and s in {0', 1', 2'}, plus `/0/1` and `/1/0` at s = 2'), every ordered pair of two different entropies at the same path under the same passphrase | 3,904,290 keys, 4,986,775,560 ordered pairs | CPU BIP39/BIP32 generation and pairing, `tools/check_digest_model.py --wave 2`, 8 processes, exact 32-byte compare | 0 match | yes: the revealed pair of block 963,629 inserted at the first, middle and last passphrase, re-found 195 of 195 times (3 passphrases x 65 paths, one valid key order each) | 4,774,535 ordered pairs/s on an 8-core Apple M-series CPU, 1,044 s | 2026-09-17 |
+
+Waves 1 and 2 together test 6,439,259,706 ordered pairs of the digest model and match nothing.
+What this does not cover: a digest input outside the 73 listed (the unanswered on-chain
+question of 2026-09-17 asks the author exactly this: typed text, raw block bytes, a file, or
+something else), a name format outside the 47, a digest algorithm outside the 18, mixing two
+different passphrases or two different paths across the two cosigners, and 24-word mnemonics.
