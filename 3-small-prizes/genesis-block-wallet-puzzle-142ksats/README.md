@@ -260,6 +260,7 @@ windows, readings and derivation paths. Reproduce with `tools/candidates.py --wr
 | `clues/author-posts.md` | every OP_RETURN of the dialogue, verbatim, with txid, block and time |
 | `data/genesis-block.hex` | the raw genesis block, 285 bytes, as served by any node or explorer |
 | `data/on-chain-dialogue.json` | the 24 escrow transactions: sender attribution, amounts, decoded OP_RETURN, fetched 2026-09-12 |
+| `analysis/state-of-play.md` | where the puzzle stands after seven passes: what the author has established, what he refuses, what is ruled out, what to do next |
 | `analysis/tested.md` | the negatives ledger: passes 1 and 2 in full, with their exact scope |
 | `analysis/leads.md` | full notes behind the ranked leads, with family sizes and the two killed passes |
 | `tools/oracle.py` | candidate checker: two keys to 2-of-2 P2WSH, both orders, exact match; `--selftest` |
