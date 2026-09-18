@@ -848,8 +848,13 @@ def ic_autodetect(text: str) -> str:
     return "hex"
 
 
-def wave7_entropies() -> list[tuple[bytes, str]]:
-    """SHA-256 of every filtered form of every rendering of every part, first 128 bits."""
+def wave7_entropies(all_digests: bool = False) -> list[tuple[bytes, str]]:
+    """Digests of every filtered form of every rendering of every part.
+
+    With all_digests false this is the BIP39 tool's own behaviour, SHA-256 truncated to 128
+    bits. With it true the same filtered strings go through every digest reading this file
+    knows, for the case of a different tool that filters alike and hashes otherwise.
+    """
     ents: dict[bytes, str] = {}
     for part, blob in wave6_parts().items():
         for label, form in four_forms(part, blob).items():
@@ -857,17 +862,22 @@ def wave7_entropies() -> list[tuple[bytes, str]]:
                 text = form.decode("latin-1")
             except Exception:
                 continue
-            for base in IC_MATCHERS:
+            bases = dict.fromkeys(list(IC_MATCHERS) + [ic_autodetect(text)])
+            for base in bases:
                 clean = ic_clean(text, base)
                 if not clean:
                     continue
-                d = hashlib.sha256(clean.encode()).digest()[:16]
-                ents.setdefault(d, f"ic:{base}({label})")
-            auto = ic_autodetect(text)
-            clean = ic_clean(text, auto)
-            if clean:
-                d = hashlib.sha256(clean.encode()).digest()[:16]
-                ents.setdefault(d, f"ic:auto={auto}({label})")
+                blob_clean = clean.encode()
+                if all_digests:
+                    readings = dict(digests(blob_clean))
+                    try:
+                        readings.update(extra_digests(blob_clean))
+                    except Exception:
+                        pass
+                else:
+                    readings = {"sha256[:16]": hashlib.sha256(blob_clean).digest()[:16]}
+                for dname, d in readings.items():
+                    ents.setdefault(d, f"ic:{base}:{dname}({label})")
     return list(ents.items())
 
 
@@ -891,8 +901,8 @@ def _wave7(job):
     return npairs, hits, wit
 
 
-def run_wave7(procs):
-    ents = wave7_entropies()
+def run_wave7(procs, all_digests=False):
+    ents = wave7_entropies(all_digests)
     marks = {0, len(ents) // 2, len(ents) - 1}
     jobs = [(e, lab, i in marks) for i, (e, lab) in enumerate(ents)]
     print(f"filtered entropies {len(ents)}, names {len(NAMES)}, paths {len(WAVE4_PATHS)}",
@@ -923,6 +933,8 @@ def main():
     ap.add_argument("--wave", type=int, choices=(1, 2, 3, 4, 5, 6, 7))
     ap.add_argument("--procs", type=int, default=8)
     ap.add_argument("--count", action="store_true")
+    ap.add_argument("--all-digests", action="store_true",
+                    help="wave 7 only: run the filtered strings through every digest reading")
     args = ap.parse_args()
 
     per_seed = len(ACCOUNTS) * len(SCRIPTS) * len(SUFFIXES)
@@ -951,7 +963,7 @@ def main():
         return 0
 
     if args.wave == 7:
-        return run_wave7(args.procs)
+        return run_wave7(args.procs, args.all_digests)
 
     if args.wave == 6:
         return run_wave6(args.procs)

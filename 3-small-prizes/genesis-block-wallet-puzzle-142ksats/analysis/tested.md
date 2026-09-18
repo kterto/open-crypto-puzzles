@@ -248,8 +248,15 @@ been tried.
 |---|---|---|---|---|---|---|
 | Pass 4 wave 7: every rendering of every structural part filtered as the BIP39 tool filters it, under each of its five character bases (binary, base 6, dice, base 10, hex) and under the base its autodetect would choose, then SHA-256 truncated to 128 bits exactly as the tool does; 47 name formats, 52 paths, both key encodings, pairs inside each seed | 464 distinct entropies, 57,835,446 ordered pairs | CPU generation and pairing, `tools/check_digest_model.py --wave 7`, 8 processes, exact 32-byte compare | 0 match | yes: the revealed pair of block 963,629 inserted in the first, middle and last entropy, 3 of 3 re-found | 649,687 ordered pairs/s on an 8-core Apple M-series CPU, 89 s | 2026-09-18 |
 
-Scope: the tool's own digest, SHA-256 truncated to 128 bits, over filtered forms of the 44
-structural parts. Not covered: filtered forms of the 114 window parts, other digest functions
-over filtered strings, the card base, and the tool's "raw" mnemonic-length setting, which skips
-the hash entirely and uses the bits themselves. Seven passes now test 610,793,002,272 ordered
-pairs of this puzzle.
+Wave 7b repeats the same filtered strings under every digest reading this folder knows, for the
+case of a different tool that filters alike and hashes otherwise.
+
+| Hypothesis | Space (N) | Method | Result | Witness | Rate | Date |
+|---|---|---|---|---|---|---|
+| Pass 4 wave 7b: the filtered strings of wave 7 under all 24 digest readings instead of the tool's own SHA-256 truncation; 47 name formats, 52 paths, both key encodings | 12,064 distinct entropies, 1,503,705,846 ordered pairs | same pipeline, `tools/check_digest_model.py --wave 7 --all-digests` | 0 match | yes: revealed pair in the first, middle and last entropy, 3 of 3 re-found | 918,690 ordered pairs/s, 1,637 s | 2026-09-18 |
+
+Scope: filtered forms of the 44 structural parts, under the five character bases and autodetect,
+with the tool's own SHA-256 truncation in wave 7 and all 24 digest readings in wave 7b. Not
+covered: filtered forms of the 114 window parts, the card base, and the tool's "raw"
+mnemonic-length setting, which skips the hash entirely and uses the typed bits themselves. Seven
+passes now test 612,296,708,118 ordered pairs of this puzzle.
