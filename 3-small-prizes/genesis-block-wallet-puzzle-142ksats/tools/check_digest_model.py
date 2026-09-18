@@ -37,6 +37,7 @@ Usage (run from this folder):
     python3 tools/check_digest_model.py --wave 4 [--procs 8]
     python3 tools/check_digest_model.py --wave 5 [--procs 8]
     python3 tools/check_digest_model.py --wave 6 [--procs 8]
+    python3 tools/check_digest_model.py --wave 7 [--procs 8]
 
 Input:
     data/genesis-block.hex and the constants below. No network.
@@ -804,9 +805,122 @@ def run_wave6(procs):
     return 1 if wit == 3 else 2
 
 
+# ---------------------------------------------------------------------------
+# Wave 7: the entropy box of the BIP39 tool, which hashes what survives its filter
+# ---------------------------------------------------------------------------
+# The author says the wallet was built with "the tools that support BIPs 32, 39, and 48".
+# The BIP39 tool at iancoleman.io/bip39 turns typed entropy into a 12-word mnemonic by
+# SHA-256 of entropy.cleanStr, truncated to 128 bits (src/js/index.js, "Get bits by hashing
+# entropy with SHA256"). cleanStr is not what was typed: entropy.js builds it as
+# base.events.join(""), the characters that match the detected base, with everything else
+# dropped and the case preserved. Pasting the coinbase text into that box therefore hashes
+# only its hex characters. Every earlier wave hashed complete renderings, so no filtered
+# string has been tested.
+
+IC_MATCHERS = {
+    "binary": "01",
+    "base6": "012345",
+    "dice": "123456",
+    "base10": "0123456789",
+    "hex": "0123456789abcdefABCDEF",
+}
+
+
+def ic_clean(text: str, base: str) -> str:
+    """entropy.cleanStr: the characters matching the base, in order, case preserved."""
+    allowed = IC_MATCHERS[base]
+    return "".join(c for c in text if c in allowed)
+
+
+def ic_autodetect(text: str) -> str:
+    """getBase(): the base the tool picks when the type is left on autodetect."""
+    n_hex = len(ic_clean(text, "hex"))
+    if n_hex == 0:
+        return "hex"
+    if len(ic_clean(text, "binary")) == n_hex:
+        return "binary"
+    if len(ic_clean(text, "dice")) == n_hex:
+        return "dice"
+    if len(ic_clean(text, "base6")) == n_hex:
+        return "base6"
+    if len(ic_clean(text, "base10")) == n_hex:
+        return "base10"
+    return "hex"
+
+
+def wave7_entropies() -> list[tuple[bytes, str]]:
+    """SHA-256 of every filtered form of every rendering of every part, first 128 bits."""
+    ents: dict[bytes, str] = {}
+    for part, blob in wave6_parts().items():
+        for label, form in four_forms(part, blob).items():
+            try:
+                text = form.decode("latin-1")
+            except Exception:
+                continue
+            for base in IC_MATCHERS:
+                clean = ic_clean(text, base)
+                if not clean:
+                    continue
+                d = hashlib.sha256(clean.encode()).digest()[:16]
+                ents.setdefault(d, f"ic:{base}({label})")
+            auto = ic_autodetect(text)
+            clean = ic_clean(text, auto)
+            if clean:
+                d = hashlib.sha256(clean.encode()).digest()[:16]
+                ents.setdefault(d, f"ic:auto={auto}({label})")
+    return list(ents.items())
+
+
+def _wave7(job):
+    from bip_utils import Bip39MnemonicGenerator
+    ent, label, marked = job
+    mnemonic = str(Bip39MnemonicGenerator().FromEntropy(ent))
+    npairs, hits, wit = 0, [], 0
+    for pw_i, pw in enumerate(NAMES):
+        ks = _wave4_keys(mnemonic, pw)
+        kk = [k for k in ks if k]
+        if marked and pw_i == 0:
+            kk = kk + [oracle.REVEALED_A, oracle.REVEALED_B]
+        n, found = _pair(kk, kk, True)
+        npairs += n
+        for t, i, j in found:
+            if t == "WITNESS":
+                wit += 1
+            else:
+                hits.append((label, pw, i, j, mnemonic))
+    return npairs, hits, wit
+
+
+def run_wave7(procs):
+    ents = wave7_entropies()
+    marks = {0, len(ents) // 2, len(ents) - 1}
+    jobs = [(e, lab, i in marks) for i, (e, lab) in enumerate(ents)]
+    print(f"filtered entropies {len(ents)}, names {len(NAMES)}, paths {len(WAVE4_PATHS)}",
+          flush=True)
+    t0, total, wit, allhits = time.time(), 0, 0, []
+    with Pool(procs) as pool:
+        for k, (n, hits, w) in enumerate(pool.imap_unordered(_wave7, jobs, chunksize=1)):
+            total += n
+            wit += w
+            for h in hits:
+                allhits.append(h)
+                print("MATCH", h, flush=True)
+            if k % 200 == 0:
+                el = time.time() - t0
+                print(f"  {k}/{len(jobs)} entropies, {total:,} pairs, "
+                      f"{int(total / max(el, 1)):,}/s, {el:.0f}s", flush=True)
+    el = time.time() - t0
+    print(f"done: {total:,} ordered pairs in {el:.0f}s ({int(total / el):,}/s)")
+    print(f"witness re-found {wit} of 3 expected")
+    print(f"escrow matches: {len(allhits)}")
+    if allhits:
+        return 0
+    return 1 if wit == 3 else 2
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--wave", type=int, choices=(1, 2, 3, 4, 5, 6))
+    ap.add_argument("--wave", type=int, choices=(1, 2, 3, 4, 5, 6, 7))
     ap.add_argument("--procs", type=int, default=8)
     ap.add_argument("--count", action="store_true")
     args = ap.parse_args()
@@ -825,6 +939,7 @@ def main():
         e4, p4, b4 = len(WAVE4_ENTS), len(WAVE4_PATHS), len(WAVE4_B_IDX)
         print(f"wave 4: parts {len(PARTS)}, entropies {e4}, paths {p4}, ordered pairs "
               f"{e4 * len(NAMES) * p4 * (p4 - 1) + len(NAMES) * b4 * e4 * (e4 - 1):,}")
+        print(f"wave 7: filtered entropies {len(wave7_entropies())}")
         print(f"wave 6: new-digest entropies {len(wave6_entropies())}, "
               f"plus {len(WAVE4_ENTS)} wave-4 entropies re-run with both key encodings")
         j5 = wave5_jobs()
@@ -834,6 +949,9 @@ def main():
               f"names {len(NAMES_WIDE)}, paths {p3}, ordered pairs "
               f"{e3 * len(NAMES_WIDE) * p3 * (p3 - 1) + e3 * (c3 * (c3 - 1) // 2) * b3 * b3:,}")
         return 0
+
+    if args.wave == 7:
+        return run_wave7(args.procs)
 
     if args.wave == 6:
         return run_wave6(args.procs)

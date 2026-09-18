@@ -231,3 +231,25 @@ encoding. RIPEMD-128 and Whirlpool, both 128-bit and both plausible, are not ava
 environment and remain untested. Six passes now test 610,735,164,124 ordered pairs of this
 puzzle, and no reading of the entropy input, the digest function, the passphrase format or the
 key encoding tried so far reproduces the escrow.
+
+## Pass 4, wave 7: the entropy box of the BIP39 tool (2026-09-18)
+
+The author says the wallet was built with "the tools that support BIPs 32, 39, and 48". The
+BIP39 tool at iancoleman.io/bip39 builds a 12-word mnemonic from typed entropy by taking
+SHA-256 of `entropy.cleanStr` and truncating it to 128 bits (`src/js/index.js`, "Get bits by
+hashing entropy with SHA256"). That is a 128-bit digest in the author's words. The part worth
+testing is what gets hashed: `entropy.js` builds `cleanStr` as `base.events.join("")`, the
+characters that match the detected base, with every other character dropped and the case kept.
+Pasting the coinbase text into that box hashes `ee03a2009Cacebfecdbafba`, its surviving hex
+characters, not the sentence. Waves 1 to 6 hashed complete renderings, so no filtered string had
+been tried.
+
+| Hypothesis | Space (N) | Method | Result | Witness | Rate | Date |
+|---|---|---|---|---|---|---|
+| Pass 4 wave 7: every rendering of every structural part filtered as the BIP39 tool filters it, under each of its five character bases (binary, base 6, dice, base 10, hex) and under the base its autodetect would choose, then SHA-256 truncated to 128 bits exactly as the tool does; 47 name formats, 52 paths, both key encodings, pairs inside each seed | 464 distinct entropies, 57,835,446 ordered pairs | CPU generation and pairing, `tools/check_digest_model.py --wave 7`, 8 processes, exact 32-byte compare | 0 match | yes: the revealed pair of block 963,629 inserted in the first, middle and last entropy, 3 of 3 re-found | 649,687 ordered pairs/s on an 8-core Apple M-series CPU, 89 s | 2026-09-18 |
+
+Scope: the tool's own digest, SHA-256 truncated to 128 bits, over filtered forms of the 44
+structural parts. Not covered: filtered forms of the 114 window parts, other digest functions
+over filtered strings, the card base, and the tool's "raw" mnemonic-length setting, which skips
+the hash entirely and uses the bits themselves. Seven passes now test 610,793,002,272 ordered
+pairs of this puzzle.
