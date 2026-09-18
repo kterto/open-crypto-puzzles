@@ -192,3 +192,21 @@ formats, 52 paths. The author's rule is about the form, not the part, and "which
 used" stays open: a part can be smaller or larger than a field, and wave 4 does not enumerate
 windows of the block, the individual fields of the coinbase transaction, or the pieces of the
 scriptSig. The four passes together test 605,494,412,466 ordered pairs of this puzzle.
+
+## Pass 4, wave 5: more parts, cosigners from one part (2026-09-17)
+
+Wave 4 took the parts a person names when reading a block header. Wave 5 takes the parts a
+person names when reading the block's bytes: the fields of the coinbase transaction, the pieces
+of its scriptSig and of its output script, and windows of the block and of the text. It also
+narrows the cross pairing to what the author said on 2026-08-24, "both keys use the same Genesis
+field": phase B pairs two entropies only when both come from the same part, two forms or two
+digests of one field, rather than across unrelated parts as waves 2 and 4 did.
+
+| Hypothesis | Space (N) | Method | Result | Witness | Rate | Date |
+|---|---|---|---|---|---|---|
+| Pass 4 wave 5: 19 structural parts (coinbase transaction version, input count, prevout hash, prevout index, script length, scriptSig, sequence, output count, the 5,000,000,000-sat value and its decimal string, output script, locktime; the scriptSig pieces `04ffff001d`, `ffff001d`, `0104`, the length byte `45` and the text; the output script framing `41` and `ac`) in all 11 renderings of the four forms, plus 114 window parts (every 16-byte window of the 285-byte block at stride 4, every 32-byte window at stride 8, every 16-byte window of the coinbase text at stride 4) in the four core renderings; 16 digest readings, 10,908 entropies, 47 name formats, 52 paths; phase A pairs two paths inside one seed, phase B pairs two entropies of the same part at 13 native-P2WSH paths under the first 24 name formats | 133 parts, 10,908 entropies, 1,666,960,548 ordered pairs | CPU generation and pairing, `tools/check_digest_model.py --wave 5`, 8 processes, exact 32-byte compare | 0 match | yes: the revealed pair of block 963,629 inserted in the first, middle and last structural part, in both phases, 6 of 6 re-found | 1,163,169 ordered pairs/s on an 8-core Apple M-series CPU, 1,433 s | 2026-09-17 |
+
+Scope: the 19 structural parts and the 114 windows listed, at those strides. Windows at stride 1,
+windows of lengths other than 16 and 32, the fields of the block as an explorer renders them in
+JSON, and digest functions outside the 16 are not covered. Five passes now test 607,161,373,014
+ordered pairs of this puzzle.

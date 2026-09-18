@@ -4221,10 +4221,10 @@
         "certified_against": "the BIP-173 P2WSH test vector, and a real 2-of-2 P2WSH spent in block 963629 (tx 47ded3504e855ce418e46eeca4694b55a623d1e23a8e3c83292abbcf9cee9f7a, input 0) whose revealed keys rebuild the script and hash to the spent address; private key 1 to the generator point; negative control against the escrow"
       },
       "difficulty_left": "insight",
-      "difficulty_note": "the lock is fully characterized (2-of-2 P2WSH, exact offline oracle) and the corpus is 285 public bytes; passes 1 and 2 (2026-08-29) exhausted the mechanical readings of the August hints, pass 3 (2026-09-12) killed the raw 16-byte window model, and the author confirmed on 2026-09-15 that the entropy is not the raw 16 bytes but a 128-bit digest and that the passphrase is a name, the name of whoever received the first transaction; pass 4 (2026-09-17, three waves, 8.03e9 ordered pairs over 6,078 digest entropies and up to 137 name formats, witnesses re-found) shows the digest input is none of the 73 canonical genesis readings nor of 300 typed forms of the texts; the author answered the question that asks which input is hashed by naming the four forms the data can be written in (binary, hex, decimal, ASCII) while refusing to name the part, and wave 4 (2026-09-17, 11.74e9 pairs over 25 parts in 11 renderings, witness re-found) matched nothing; the open unknown is which part of the block carries the entropy",
+      "difficulty_note": "the lock is fully characterized (2-of-2 P2WSH, exact offline oracle) and the corpus is 285 public bytes; passes 1 and 2 (2026-08-29) exhausted the mechanical readings of the August hints, pass 3 (2026-09-12) killed the raw 16-byte window model, and the author confirmed on 2026-09-15 that the entropy is not the raw 16 bytes but a 128-bit digest and that the passphrase is a name, the name of whoever received the first transaction; pass 4 (2026-09-17, three waves, 8.03e9 ordered pairs over 6,078 digest entropies and up to 137 name formats, witnesses re-found) shows the digest input is none of the 73 canonical genesis readings nor of 300 typed forms of the texts; the author answered the question that asks which input is hashed by naming the four forms the data can be written in (binary, hex, decimal, ASCII) while refusing to name the part, and wave 4 (2026-09-17, 11.74e9 pairs over 25 parts in 11 renderings, witness re-found) matched nothing; wave 5 (2026-09-17, 1.67e9 pairs over 133 parts including the coinbase fields, the script pieces and 114 windows, with the two cosigners taken from one part as the author's \"same Genesis field\" requires) matched nothing either; the open unknown is which part of the block carries the entropy",
       "tested_total": {
-        "candidates": 593749564510,
-        "families": 12,
+        "candidates": 595416525058,
+        "families": 13,
         "certified": true
       },
       "leads": [
@@ -4236,8 +4236,8 @@
         },
         {
           "rank": 2,
-          "title": "enumerate more genesis parts in the author's four forms: windows of the block, the coinbase transaction fields, the scriptSig pieces",
-          "cost": "hours on 8 cores",
+          "title": "enumerate the parts wave 5 did not reach: windows at stride 1, lengths other than 16 and 32, explorer JSON renderings",
+          "cost": "hours on 8 cores, falling prior",
           "status": "open"
         },
         {
@@ -4260,24 +4260,30 @@
         },
         {
           "rank": 6,
+          "title": "pass 4 wave 5: 133 parts (coinbase fields, script pieces, 114 windows) in the four forms, cosigners from one part, 1.67e9 pairs",
+          "cost": "24 minutes on 8 cores",
+          "status": "killed"
+        },
+        {
+          "rank": 7,
           "title": "pass 4 waves 1 to 3: 128-bit digest entropies with name passphrases, canonical and typed inputs, both cosigner readings, 8.03e9 pairs",
           "cost": "about 50 minutes on 8 cores",
           "status": "killed"
         },
         {
-          "rank": 7,
+          "rank": 8,
           "title": "pass 3: 16-byte genesis windows as 12-word entropy, 53 passphrases, genesis integers as BIP48 account, script types 0/1/2, keys paired (2.46e12 pairs)",
           "cost": "minutes",
           "status": "killed"
         },
         {
-          "rank": 8,
+          "rank": 9,
           "title": "pass 2: library-specific roots (hashed roots, raw 64-byte extended key, raw key with zero chain code) along the same 214 paths",
           "cost": "minutes",
           "status": "killed"
         },
         {
-          "rank": 9,
+          "rank": 10,
           "title": "pass 1: literal readings of the 2026-08-28 hints, families A to D",
           "cost": "minutes",
           "status": "killed"

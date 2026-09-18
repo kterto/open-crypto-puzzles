@@ -221,6 +221,7 @@ windows, readings and derivation paths. Reproduce with `tools/candidates.py --wr
 | Pass 4 wave 2 (2026-09-17): the same entropies and passphrases, two cosigners taken from two different digests at the same path under the same passphrase, 65 paths | 3,904,290 keys, 4,986,775,560 ordered pairs | same pipeline, `--wave 2` | 0 match | yes: revealed pair at the first, middle and last passphrase, 195 of 195 re-found | 2026-09-17 |
 | Pass 4 wave 3 (2026-09-17): 300 typed forms of the coinbase text, the headline and the date line (case, spacing, trailing newline, CRLF, period, quotes, eight date spellings, the block as a hex file) under 16 digest readings, 4,800 entropies, 137 name formats, 36 paths; pairs two paths under one seed and two name formats under one entropy | 4,800 entropies, 1,591,661,238 ordered pairs | same pipeline, `--wave 3` | 0 match | yes: revealed pair in the first, middle and last entropy group, 3 of 3 re-found | 2026-09-17 |
 | Pass 4 wave 4, the four forms (2026-09-17): 25 genesis parts (the header fields in both byte orders, the block, the header, the coinbase transaction, the texts, the public key and its coordinates, the truncated hashes) each rendered in 11 ways covering the author's four views (raw bytes, lower and upper-case hex, the decimal value, the bit string plain, stripped and byte-spaced, the latin-1 and dotted ASCII views, the per-byte decimal lists), 4,284 entropies, 47 name formats, 52 paths; pairs inside one seed and across two entropies at the 13 native-P2WSH accounts | 4,284 entropies, 11,744,847,956 ordered pairs | CPU generation and pairing, `tools/check_digest_model.py --wave 4`, 8 processes, exact 32-byte compare | 0 match | yes: revealed pair inserted in the first, middle and last entropy group and in the cross pass, 4 of 4 re-found | 2026-09-17 |
+| Pass 4 wave 5 (2026-09-17): 19 structural parts (the coinbase transaction fields, the scriptSig pieces, the output script framing) in all 11 renderings plus 114 window parts (16-byte windows of the block at stride 4, 32-byte at stride 8, 16-byte windows of the text) in the four core renderings, 10,908 entropies, 47 name formats, 52 paths; phase B pairs two entropies of the same part, as the author's "same Genesis field" requires | 133 parts, 10,908 entropies, 1,666,960,548 ordered pairs | same pipeline, `--wave 5` | 0 match | yes: revealed pair in the first, middle and last structural part, both phases, 6 of 6 re-found | 2026-09-17 |
 
 ## Open leads, ranked
 
@@ -230,11 +231,11 @@ windows, readings and derivation paths. Reproduce with `tools/candidates.py --wr
    `128-bit digest: MD5? Or truncated SHA256? Which one?`
    Every pass so far spreads its budget over 16 to 18 digest readings; one answer divides the
    space by that factor whatever the input turns out to be.
-2. **Enumerate more parts in the four forms** (hours on 8 cores). Wave 4 took 25 parts. The
-   author said "which part", which need not be a whole field: windows of the block, the
-   individual fields of the coinbase transaction, the script pieces, and the fields as they
-   appear in an explorer's JSON are all parts a person would point at. Each is cheap to add,
-   and the four-forms rule now fixes how each is written.
+2. **Enumerate the parts wave 5 did not reach** (hours on 8 cores, falling prior). Wave 5 took
+   the coinbase transaction's fields, the script pieces and 114 windows of the block and the
+   text at stride 4 and 8, and matched nothing. What is left on this line is windows at stride
+   1, window lengths other than 16 and 32, and the fields as an explorer renders them in JSON.
+   The cost grows and the prior falls with each of these.
 3. **Watch the channel** (minutes). Re-read the escrow before any work: a new OP_RETURN from
    the author's change chain is a new constraint, a spend closes the puzzle. The author's
    current change output at 2026-09-17 is the change of

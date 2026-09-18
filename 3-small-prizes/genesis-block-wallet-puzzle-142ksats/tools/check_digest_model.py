@@ -35,6 +35,7 @@ Usage (run from this folder):
     python3 tools/check_digest_model.py --wave 2 [--procs 8]
     python3 tools/check_digest_model.py --wave 3 [--procs 8]
     python3 tools/check_digest_model.py --wave 4 [--procs 8]
+    python3 tools/check_digest_model.py --wave 5 [--procs 8]
 
 Input:
     data/genesis-block.hex and the constants below. No network.
@@ -525,9 +526,156 @@ def run_wave4(procs):
     return 1 if wit == 4 else 2
 
 
+# ---------------------------------------------------------------------------
+# Wave 5: more parts, in the same four forms, with the cosigners taken from one part
+# ---------------------------------------------------------------------------
+
+def coinbase_parts() -> dict[str, bytes]:
+    """The fields of the coinbase transaction and the pieces of its scriptSig."""
+    out = {}
+    tx = COINBASE_TX
+    out["cb_version"] = tx[0:4]
+    out["cb_incount"] = tx[4:5]
+    out["cb_prevout_hash"] = tx[5:37]
+    out["cb_prevout_index"] = tx[37:41]
+    out["cb_scriptlen"] = tx[41:42]
+    script = tx[42:42 + 77]
+    out["cb_scriptsig"] = script
+    out["cb_sequence"] = tx[119:123]
+    out["cb_outcount"] = tx[123:124]
+    out["cb_value"] = tx[124:132]
+    out["cb_pkscript"] = tx[132:132 + 67]
+    out["cb_locktime"] = tx[-4:]
+    # scriptSig pieces: the difficulty push, the extranonce push, the text push
+    out["ss_bits_push"] = bytes.fromhex("04ffff001d")
+    out["ss_bits"] = bytes.fromhex("ffff001d")
+    out["ss_extranonce"] = bytes.fromhex("0104")
+    out["ss_textlen"] = bytes([0x45])
+    out["ss_text"] = T
+    # output script pieces
+    out["pk_push"] = bytes([0x41])
+    out["pk_checksig"] = bytes([0xAC])
+    out["cb_value_dec"] = str(5000000000).encode()
+    return out
+
+
+def window_parts() -> dict[str, bytes]:
+    """Windows of the block and of the coinbase text, which a person may call a part."""
+    out = {}
+    for start in range(0, len(BLOCK) - 16 + 1, 4):
+        out[f"block16@{start}"] = BLOCK[start:start + 16]
+    for start in range(0, len(BLOCK) - 32 + 1, 8):
+        out[f"block32@{start}"] = BLOCK[start:start + 32]
+    for start in range(0, len(T) - 16 + 1, 4):
+        out[f"text16@{start}"] = T[start:start + 16]
+    return out
+
+
+WAVE5_FULL = coinbase_parts()
+WAVE5_WINDOWS = window_parts()
+WAVE5_SHORT_FORMS = ("raw", "hex", "dec", "bin")
+WAVE5_B_NAMES = 24     # phase B uses the first 24 name formats
+WAVE5_B_PATHS = WAVE4_B_IDX
+
+
+def wave5_part_entropies(name: str, blob: bytes, short: bool) -> list[tuple[bytes, str]]:
+    forms = four_forms(name, blob)
+    if short:
+        forms = {k: v for k, v in forms.items()
+                 if k.rsplit("/", 1)[1] in WAVE5_SHORT_FORMS}
+    ents: dict[bytes, str] = {}
+    for label, form in forms.items():
+        for dname, d in digests(form).items():
+            ents.setdefault(d, f"{dname}({label})")
+    return list(ents.items())
+
+
+def _wave5(job):
+    """One part: every form of it, phase A inside each seed, phase B inside the part."""
+    from bip_utils import Bip39MnemonicGenerator
+    part_name, blob, short, marked = job
+    ents = wave5_part_entropies(part_name, blob, short)
+    npairs, hits, wit = 0, [], 0
+    cols = []            # [entropy][name][path] for phase B
+    for e_i, (ent, label) in enumerate(ents):
+        mnemonic = str(Bip39MnemonicGenerator().FromEntropy(ent))
+        per_name = []
+        for pw_i, pw in enumerate(NAMES):
+            ks = _wave4_keys(mnemonic, pw)
+            if pw_i < WAVE5_B_NAMES:
+                per_name.append([ks[i] for i in WAVE5_B_PATHS])
+            kk = [k for k in ks if k]
+            if marked and e_i == 0 and pw_i == 0:
+                kk = kk + [oracle.REVEALED_A, oracle.REVEALED_B]
+            n, found = _pair(kk, kk, True)
+            npairs += n
+            for t, i, j in found:
+                if t == "WITNESS":
+                    wit += 1
+                else:
+                    hits.append(("A", label, pw, i, j, mnemonic))
+        cols.append(per_name)
+
+    for pw_i in range(min(WAVE5_B_NAMES, len(NAMES))):
+        for p in range(len(WAVE5_B_PATHS)):
+            col = [(e_i, cols[e_i][pw_i][p]) for e_i in range(len(ents))
+                   if cols[e_i][pw_i][p]]
+            if marked and pw_i == 0 and p == 0:
+                col = col + [(-1, oracle.REVEALED_A), (-2, oracle.REVEALED_B)]
+            keys = [k for _, k in col]
+            n, found = _pair(keys, keys, True)
+            npairs += n
+            for t, i, j in found:
+                if t == "WITNESS":
+                    wit += 1
+                else:
+                    hits.append(("B", part_name, NAMES[pw_i],
+                                 ents[col[i][0]][1] if col[i][0] >= 0 else "WIT",
+                                 ents[col[j][0]][1] if col[j][0] >= 0 else "WIT"))
+    return part_name, npairs, hits, wit
+
+
+def wave5_jobs():
+    jobs = []
+    full = list(WAVE5_FULL.items())
+    wins = list(WAVE5_WINDOWS.items())
+    marks = {0, len(full) // 2, len(full) - 1}
+    for i, (name, blob) in enumerate(full):
+        jobs.append((name, blob, False, i in marks))
+    for name, blob in wins:
+        jobs.append((name, blob, True, False))
+    return jobs
+
+
+def run_wave5(procs):
+    jobs = wave5_jobs()
+    n_ents = sum(len(wave5_part_entropies(n, b, sh)) for n, b, sh, _ in jobs)
+    print(f"parts {len(jobs)} ({len(WAVE5_FULL)} structural, {len(WAVE5_WINDOWS)} windows), "
+          f"entropies {n_ents}, names {len(NAMES)}, paths {len(WAVE4_PATHS)}", flush=True)
+    t0, total, wit, allhits = time.time(), 0, 0, []
+    with Pool(procs) as pool:
+        for k, (name, n, hits, w) in enumerate(pool.imap_unordered(_wave5, jobs, chunksize=1)):
+            total += n
+            wit += w
+            for h in hits:
+                allhits.append(h)
+                print("MATCH", h, flush=True)
+            if k % 10 == 0:
+                el = time.time() - t0
+                print(f"  {k}/{len(jobs)} parts, {total:,} pairs, "
+                      f"{int(total / max(el, 1)):,}/s, {el:.0f}s", flush=True)
+    el = time.time() - t0
+    print(f"done: {total:,} ordered pairs in {el:.0f}s ({int(total / el):,}/s)")
+    print(f"witness re-found {wit} of 6 expected")
+    print(f"escrow matches: {len(allhits)}")
+    if allhits:
+        return 0
+    return 1 if wit == 6 else 2
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--wave", type=int, choices=(1, 2, 3, 4))
+    ap.add_argument("--wave", type=int, choices=(1, 2, 3, 4, 5))
     ap.add_argument("--procs", type=int, default=8)
     ap.add_argument("--count", action="store_true")
     args = ap.parse_args()
@@ -546,10 +694,16 @@ def main():
         e4, p4, b4 = len(WAVE4_ENTS), len(WAVE4_PATHS), len(WAVE4_B_IDX)
         print(f"wave 4: parts {len(PARTS)}, entropies {e4}, paths {p4}, ordered pairs "
               f"{e4 * len(NAMES) * p4 * (p4 - 1) + len(NAMES) * b4 * e4 * (e4 - 1):,}")
+        j5 = wave5_jobs()
+        e5 = sum(len(wave5_part_entropies(n, b, sh)) for n, b, sh, _ in j5)
+        print(f"wave 5: parts {len(j5)}, entropies {e5}")
         print(f"wave 3: typed inputs {len(typed_variants())}, entropies {e3}, "
               f"names {len(NAMES_WIDE)}, paths {p3}, ordered pairs "
               f"{e3 * len(NAMES_WIDE) * p3 * (p3 - 1) + e3 * (c3 * (c3 - 1) // 2) * b3 * b3:,}")
         return 0
+
+    if args.wave == 5:
+        return run_wave5(args.procs)
 
     if args.wave == 4:
         return run_wave4(args.procs)
