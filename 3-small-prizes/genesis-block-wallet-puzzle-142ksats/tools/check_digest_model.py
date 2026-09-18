@@ -36,6 +36,7 @@ Usage (run from this folder):
     python3 tools/check_digest_model.py --wave 3 [--procs 8]
     python3 tools/check_digest_model.py --wave 4 [--procs 8]
     python3 tools/check_digest_model.py --wave 5 [--procs 8]
+    python3 tools/check_digest_model.py --wave 6 [--procs 8]
 
 Input:
     data/genesis-block.hex and the constants below. No network.
@@ -673,9 +674,139 @@ def run_wave5(procs):
     return 1 if wit == 6 else 2
 
 
+# ---------------------------------------------------------------------------
+# Wave 6: the digest functions and the key encoding
+# ---------------------------------------------------------------------------
+# Two assumptions every earlier wave made without testing them. First, "a 128-bit digest" was
+# read as MD5 or a truncation of the SHA family; MD4, MD2 and Keccak-256 (which is not
+# SHA3-256) and SM3 are equally ordinary answers, and MD4 and MD2 are natively 128 bits.
+# Second, the witness script was always built with 33-byte compressed keys; a P2WSH program
+# commits only to a hash, so 65-byte uncompressed keys produce a valid script too.
+
+def extra_digests(x: bytes) -> dict[str, bytes]:
+    from Crypto.Hash import MD2, MD4, keccak
+    k256 = keccak.new(digest_bits=256, data=x).digest()
+    k512 = keccak.new(digest_bits=512, data=x).digest()
+    sm3 = hashlib.new("sm3", x).digest()
+    return {
+        "md4": MD4.new(x).digest(),
+        "md2": MD2.new(x).digest(),
+        "keccak256[:16]": k256[:16], "keccak256[16:]": k256[16:],
+        "keccak512[:16]": k512[:16], "keccak512[48:]": k512[48:],
+        "sm3[:16]": sm3[:16], "sm3[16:]": sm3[16:],
+    }
+
+
+def wave6_parts() -> dict[str, bytes]:
+    out = dict(PARTS)
+    out.update(coinbase_parts())
+    return out
+
+
+def wave6_entropies() -> list[tuple[bytes, str, str]]:
+    """(entropy, label, part) for the new digest readings over every structural part."""
+    ents: dict[bytes, tuple[str, str]] = {}
+    for part, blob in wave6_parts().items():
+        for label, form in four_forms(part, blob).items():
+            for dname, d in extra_digests(form).items():
+                ents.setdefault(d, (f"{dname}({label})", part))
+    return [(d, lab, part) for d, (lab, part) in ents.items()]
+
+
+def _wave6_keys(mnemonic, pw):
+    """Both encodings of every key: (compressed, uncompressed) per path."""
+    from bip_utils import Bip39SeedGenerator, Bip32Slip10Secp256k1
+    ctx = Bip32Slip10Secp256k1.FromSeed(Bip39SeedGenerator(mnemonic).Generate(pw))
+    keys, nodes = [], {}
+    for acct, suf in WAVE4_PATHS:
+        try:
+            if acct not in nodes:
+                nodes[acct] = ctx.DerivePath(acct)
+            pub = nodes[acct].DerivePath(suf).PublicKey()
+            keys.append(pub.RawCompressed().ToBytes())
+            keys.append(pub.RawUncompressed().ToBytes())
+        except Exception:
+            pass
+    return keys
+
+
+def _wave6(job):
+    """One entropy: pair every key encoding inside each seed."""
+    from bip_utils import Bip39MnemonicGenerator
+    ent, label, part, marked, old = job
+    mnemonic = str(Bip39MnemonicGenerator().FromEntropy(ent))
+    npairs, hits, wit, export = 0, [], 0, []
+    for pw_i, pw in enumerate(NAMES):
+        ks = _wave6_keys(mnemonic, pw)
+        if pw_i < WAVE5_B_NAMES:
+            export.append(ks[:26])
+        if marked and pw_i == 0:
+            ks = ks + [oracle.REVEALED_A, oracle.REVEALED_B]
+        n, found = _pair(ks, ks, True)
+        npairs += n
+        for t, i, j in found:
+            if t == "WITNESS":
+                wit += 1
+            else:
+                hits.append((label, part, pw, i, j, mnemonic))
+    return part, npairs, hits, wit, export, old
+
+
+def run_wave6(procs):
+    new = wave6_entropies()
+    old = [(e, lab, lab.split("(")[1].split("/")[0]) for e, lab in WAVE4_ENTS]
+    jobs = []
+    marks = {0, len(new) // 2, len(new) - 1}
+    for i, (e, lab, part) in enumerate(new):
+        jobs.append((e, lab, part, i in marks, False))
+    for e, lab, part in old:
+        jobs.append((e, lab, part, False, True))
+    print(f"new-digest entropies {len(new)}, wave-4 entropies re-run with both key encodings "
+          f"{len(old)}, names {len(NAMES)}, paths {len(WAVE4_PATHS)}", flush=True)
+    t0, total, wit, allhits = time.time(), 0, 0, []
+    groups: dict[str, list] = {}
+    with Pool(procs) as pool:
+        for k, (part, n, hits, w, export, is_old) in enumerate(
+                pool.imap_unordered(_wave6, jobs, chunksize=1)):
+            total += n
+            wit += w
+            if not is_old:
+                groups.setdefault(part, []).append(export)
+            for h in hits:
+                allhits.append(h)
+                print("MATCH A", h, flush=True)
+            if k % 200 == 0:
+                el = time.time() - t0
+                print(f"  {k}/{len(jobs)} entropies, {total:,} pairs, "
+                      f"{int(total / max(el, 1)):,}/s, {el:.0f}s", flush=True)
+
+    # Phase B: two entropies of the same part, both encodings, at the native-P2WSH paths.
+    for part, cols in groups.items():
+        if len(cols) < 2:
+            continue
+        for pw_i in range(min(WAVE5_B_NAMES, len(NAMES))):
+            for p in range(26):
+                keys = [c[pw_i][p] for c in cols if p < len(c[pw_i])]
+                n, found = _pair(keys, keys, True)
+                total += n
+                for t, i, j in found:
+                    if t == "WITNESS":
+                        wit += 1
+                    else:
+                        allhits.append(("B", part, NAMES[pw_i], i, j))
+                        print("MATCH B", allhits[-1], flush=True)
+    el = time.time() - t0
+    print(f"done: {total:,} ordered pairs in {el:.0f}s ({int(total / el):,}/s)")
+    print(f"witness re-found {wit} of 3 expected")
+    print(f"escrow matches: {len(allhits)}")
+    if allhits:
+        return 0
+    return 1 if wit == 3 else 2
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--wave", type=int, choices=(1, 2, 3, 4, 5))
+    ap.add_argument("--wave", type=int, choices=(1, 2, 3, 4, 5, 6))
     ap.add_argument("--procs", type=int, default=8)
     ap.add_argument("--count", action="store_true")
     args = ap.parse_args()
@@ -694,6 +825,8 @@ def main():
         e4, p4, b4 = len(WAVE4_ENTS), len(WAVE4_PATHS), len(WAVE4_B_IDX)
         print(f"wave 4: parts {len(PARTS)}, entropies {e4}, paths {p4}, ordered pairs "
               f"{e4 * len(NAMES) * p4 * (p4 - 1) + len(NAMES) * b4 * e4 * (e4 - 1):,}")
+        print(f"wave 6: new-digest entropies {len(wave6_entropies())}, "
+              f"plus {len(WAVE4_ENTS)} wave-4 entropies re-run with both key encodings")
         j5 = wave5_jobs()
         e5 = sum(len(wave5_part_entropies(n, b, sh)) for n, b, sh, _ in j5)
         print(f"wave 5: parts {len(j5)}, entropies {e5}")
@@ -701,6 +834,9 @@ def main():
               f"names {len(NAMES_WIDE)}, paths {p3}, ordered pairs "
               f"{e3 * len(NAMES_WIDE) * p3 * (p3 - 1) + e3 * (c3 * (c3 - 1) // 2) * b3 * b3:,}")
         return 0
+
+    if args.wave == 6:
+        return run_wave6(args.procs)
 
     if args.wave == 5:
         return run_wave5(args.procs)

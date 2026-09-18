@@ -210,3 +210,24 @@ Scope: the 19 structural parts and the 114 windows listed, at those strides. Win
 windows of lengths other than 16 and 32, the fields of the block as an explorer renders them in
 JSON, and digest functions outside the 16 are not covered. Five passes now test 607,161,373,014
 ordered pairs of this puzzle.
+
+## Pass 4, wave 6: the digest function and the key encoding (2026-09-18)
+
+Waves 1 to 5 varied the input. Wave 6 varies the two things they all held fixed. First, "a
+128-bit digest" had been read as MD5 or a truncation of the SHA family; MD4 and MD2 are
+natively 128 bits and were never tried, and Keccak-256 is a different function from SHA3-256,
+which matters because any tool that calls its hash "sha3" gives Keccak. Second, every witness
+script had been built with 33-byte compressed keys, while a P2WSH program commits only to the
+hash of the script, so 65-byte uncompressed keys are equally valid inside it; this folder had
+listed that gap since pass 1.
+
+| Hypothesis | Space (N) | Method | Result | Witness | Rate | Date |
+|---|---|---|---|---|---|---|
+| Pass 4 wave 6: eight further digest readings (MD4, MD2, the two halves of Keccak-256, two of Keccak-512, two of SM3) over 44 structural parts in all 11 renderings of the four forms, 2,584 new entropies; plus the 4,284 wave-4 entropies re-derived with both key encodings, every ordered pair of compressed and uncompressed keys inside each seed, and two entropies of the same part paired at the native-P2WSH paths | 6,868 entropies, 3,573,791,110 ordered pairs | CPU generation and pairing, `tools/check_digest_model.py --wave 6`, 8 processes, exact 32-byte compare | 0 match | yes: the revealed pair of block 963,629 inserted in the first, middle and last new-digest entropy, 3 of 3 re-found | 2,339,947 ordered pairs/s on an 8-core Apple M-series CPU, 1,527 s | 2026-09-18 |
+
+Scope: the eight listed digest readings and the two key encodings, over the structural parts
+only; the 114 window parts of wave 5 were not re-run under the new digests or the uncompressed
+encoding. RIPEMD-128 and Whirlpool, both 128-bit and both plausible, are not available in this
+environment and remain untested. Six passes now test 610,735,164,124 ordered pairs of this
+puzzle, and no reading of the entropy input, the digest function, the passphrase format or the
+key encoding tried so far reproduces the escrow.

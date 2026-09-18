@@ -24,7 +24,7 @@ bytes. The oracle is exact and offline. Four passes have now been run and none m
 | Prize | 231,501 sats (about $146 at BTC = $63,000, the 2026-08-16 snapshot); 229,724 sats earlier the same day, 168,779 on 2026-09-12, 142,779 on 2026-08-29, growing with each paid question |
 | Chain | bitcoin |
 | Escrow | `bc1qfkhx02v89u2qyyyljeczw6hu9sr437y44t7ae5yf09thrdukfqesnjg2wj` ([explorer](https://mempool.space/address/bc1qfkhx02v89u2qyyyljeczw6hu9sr437y44t7ae5yf09thrdukfqesnjg2wj)) |
-| Last on-chain check | 2026-09-17: funded and unspent, 38 confirmed outputs, 0 spent, nothing pending, confirmed on mempool.space |
+| Last on-chain check | 2026-09-18: funded and unspent, 38 confirmed outputs, 0 spent, nothing pending, confirmed on mempool.space |
 | Status | OPEN |
 | Puzzle type | multisig, raw-private-key |
 | Target format | P2WSH (v0), witness script `OP_2 <keyA> <keyB> OP_2 OP_CHECKMULTISIG`, both keys derived from one genesis-block field |
@@ -222,15 +222,17 @@ windows, readings and derivation paths. Reproduce with `tools/candidates.py --wr
 | Pass 4 wave 3 (2026-09-17): 300 typed forms of the coinbase text, the headline and the date line (case, spacing, trailing newline, CRLF, period, quotes, eight date spellings, the block as a hex file) under 16 digest readings, 4,800 entropies, 137 name formats, 36 paths; pairs two paths under one seed and two name formats under one entropy | 4,800 entropies, 1,591,661,238 ordered pairs | same pipeline, `--wave 3` | 0 match | yes: revealed pair in the first, middle and last entropy group, 3 of 3 re-found | 2026-09-17 |
 | Pass 4 wave 4, the four forms (2026-09-17): 25 genesis parts (the header fields in both byte orders, the block, the header, the coinbase transaction, the texts, the public key and its coordinates, the truncated hashes) each rendered in 11 ways covering the author's four views (raw bytes, lower and upper-case hex, the decimal value, the bit string plain, stripped and byte-spaced, the latin-1 and dotted ASCII views, the per-byte decimal lists), 4,284 entropies, 47 name formats, 52 paths; pairs inside one seed and across two entropies at the 13 native-P2WSH accounts | 4,284 entropies, 11,744,847,956 ordered pairs | CPU generation and pairing, `tools/check_digest_model.py --wave 4`, 8 processes, exact 32-byte compare | 0 match | yes: revealed pair inserted in the first, middle and last entropy group and in the cross pass, 4 of 4 re-found | 2026-09-17 |
 | Pass 4 wave 5 (2026-09-17): 19 structural parts (the coinbase transaction fields, the scriptSig pieces, the output script framing) in all 11 renderings plus 114 window parts (16-byte windows of the block at stride 4, 32-byte at stride 8, 16-byte windows of the text) in the four core renderings, 10,908 entropies, 47 name formats, 52 paths; phase B pairs two entropies of the same part, as the author's "same Genesis field" requires | 133 parts, 10,908 entropies, 1,666,960,548 ordered pairs | same pipeline, `--wave 5` | 0 match | yes: revealed pair in the first, middle and last structural part, both phases, 6 of 6 re-found | 2026-09-17 |
+| Pass 4 wave 6 (2026-09-18): eight further digest readings (MD4, MD2, Keccak-256 and Keccak-512 halves, SM3 halves) over 44 structural parts in all 11 renderings, plus every wave-4 entropy re-derived with uncompressed as well as compressed keys in the witness script | 6,868 entropies, 3,573,791,110 ordered pairs | same pipeline, `--wave 6` | 0 match | yes: revealed pair in the first, middle and last new-digest entropy, 3 of 3 re-found | 2026-09-18 |
 
 ## Open leads, ranked
 
-1. **Buy the digest function, not the part** (needs a person; 10,000 sats, about $6). The
-   author has refused to name which part of the block carries the entropy, twice, and calls it
-   the puzzle itself. He has never refused a question of pure fact. Draft, 48 bytes:
-   `128-bit digest: MD5? Or truncated SHA256? Which one?`
-   Every pass so far spreads its budget over 16 to 18 digest readings; one answer divides the
-   space by that factor whatever the input turns out to be.
+1. **Buy the part, since the guesses are exhausted** (needs a person; 10,000 sats, about $6).
+   Six passes have now tried 24 digest readings, two key encodings, 137 name formats and every
+   part and window of the block I can name, and none of them reproduces the escrow. The cheap
+   guesses are spent, so the question is worth more than another sweep. Draft, 79 bytes:
+   `Is the entropy hashed from one header field, the coinbase text, or the whole block?`
+   It asks for a category rather than the answer, which is the kind of question this author has
+   answered before.
 2. **Enumerate the parts wave 5 did not reach** (hours on 8 cores, falling prior). Wave 5 took
    the coinbase transaction's fields, the script pieces and 114 windows of the block and the
    text at stride 4 and 8, and matched nothing. What is left on this line is windows at stride
