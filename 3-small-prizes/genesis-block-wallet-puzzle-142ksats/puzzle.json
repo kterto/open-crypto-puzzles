@@ -17,11 +17,11 @@
   },
   "chain": "bitcoin",
   "prize": {
-    "amount": 229724,
+    "amount": 231501,
     "asset": "sats",
-    "usd_estimate": 145,
+    "usd_estimate": 146,
     "usd_snapshot": "2026-08-16",
-    "note": "37 P2WSH outputs to one witness script; the jackpot grows because the author relays every paid question into the escrow (125,779 sats on 2026-08-24, 142,779 on 2026-08-29, 168,779 on 2026-09-12, 229,724 on 2026-09-17)"
+    "note": "38 P2WSH outputs to one witness script; the jackpot grows because the author relays every paid question into the escrow (125,779 sats on 2026-08-24, 142,779 on 2026-08-29, 168,779 on 2026-09-12, 231,501 later on 2026-09-17)"
   },
   "addresses": [
     {
@@ -30,7 +30,7 @@
       "role": "escrow",
       "label": "main (P2WSH, witness program 4dae67a9872f1402109f9670276afc2c0758f895aafddcd089795771b7964833)",
       "explorer": "https://mempool.space/address/bc1qfkhx02v89u2qyyyljeczw6hu9sr437y44t7ae5yf09thrdukfqesnjg2wj",
-      "expected": "229724 sats in 37 confirmed outputs, growing",
+      "expected": "231501 sats in 38 confirmed outputs, growing",
       "verified_on": "2026-09-17",
       "verified_state": "funded-unspent"
     }
@@ -47,46 +47,46 @@
     "certified_against": "the BIP-173 P2WSH test vector, and a real 2-of-2 P2WSH spent in block 963629 (tx 47ded3504e855ce418e46eeca4694b55a623d1e23a8e3c83292abbcf9cee9f7a, input 0) whose revealed keys rebuild the script and hash to the spent address; private key 1 to the generator point; negative control against the escrow"
   },
   "difficulty_left": "insight",
-  "difficulty_note": "the lock is fully characterized (2-of-2 P2WSH, exact offline oracle) and the corpus is 285 public bytes; passes 1 and 2 (2026-08-29) exhausted the mechanical readings of the August hints, pass 3 (2026-09-12) killed the raw 16-byte window model, and the author confirmed on 2026-09-15 that the entropy is not the raw 16 bytes but a 128-bit digest and that the passphrase is a name, the name of whoever received the first transaction; pass 4 (2026-09-17, three waves, 8.03e9 ordered pairs over 6,078 digest entropies and up to 137 name formats, witnesses re-found) shows the digest input is none of the 73 canonical genesis readings nor of 300 typed forms of the texts; the author answered the question that asks which input is hashed with a joke about refreshing his memory, which reads as a request for a larger payment",
+  "difficulty_note": "the lock is fully characterized (2-of-2 P2WSH, exact offline oracle) and the corpus is 285 public bytes; passes 1 and 2 (2026-08-29) exhausted the mechanical readings of the August hints, pass 3 (2026-09-12) killed the raw 16-byte window model, and the author confirmed on 2026-09-15 that the entropy is not the raw 16 bytes but a 128-bit digest and that the passphrase is a name, the name of whoever received the first transaction; pass 4 (2026-09-17, three waves, 8.03e9 ordered pairs over 6,078 digest entropies and up to 137 name formats, witnesses re-found) shows the digest input is none of the 73 canonical genesis readings nor of 300 typed forms of the texts; the author answered the question that asks which input is hashed by naming the four forms the data can be written in (binary, hex, decimal, ASCII) while refusing to name the part, and wave 4 (2026-09-17, 11.74e9 pairs over 25 parts in 11 renderings, witness re-found) matched nothing; the open unknown is which part of the block carries the entropy",
   "tested_total": {
-    "candidates": 582004716554,
-    "families": 11,
+    "candidates": 593749564510,
+    "families": 12,
     "certified": true
   },
   "leads": [
     {
       "rank": 1,
-      "title": "read the author's answer to the unanswered on-chain question of 2026-09-17 about which input is hashed into the 128-bit entropy",
-      "cost": "minutes",
-      "status": "open"
-    },
-    {
-      "rank": 2,
-      "title": "ask the author on chain which 128-bit digest function and which genesis bytes (76-byte draft in the README)",
+      "title": "buy the digest function on chain (48-byte draft in the README): MD5 or truncated SHA256, which divides the space by 16 whatever the input is",
       "cost": "needs-a-person",
       "status": "open"
     },
     {
+      "rank": 2,
+      "title": "enumerate more genesis parts in the author's four forms: windows of the block, the coinbase transaction fields, the scriptSig pieces",
+      "cost": "hours on 8 cores",
+      "status": "open"
+    },
+    {
       "rank": 3,
-      "title": "pass 5 once the digest input is named: enumerate the name formats and the BIP48 paths against it",
-      "cost": "minutes",
-      "status": "open"
-    },
-    {
-      "rank": 4,
-      "title": "widen the digest inputs beyond the typed forms killed in wave 3: concatenated fields, other file encodings, digest functions outside the 18 tested",
-      "cost": "hours on 8 cores, low prior",
-      "status": "open"
-    },
-    {
-      "rank": 5,
       "title": "watch the escrow for new OP_RETURN hints or a spend before any work",
       "cost": "minutes",
       "status": "open"
     },
     {
+      "rank": 4,
+      "title": "the author's 50,000-sat offer to reveal the escrow public keys; removes pairing but not derivation, about a factor of two, and says nothing about the input",
+      "cost": "needs-a-person, not recommended",
+      "status": "open"
+    },
+    {
+      "rank": 5,
+      "title": "pass 4 wave 4: 25 genesis parts in 11 renderings of the four forms, 4,284 entropies, 11.74e9 pairs",
+      "cost": "95 minutes on 8 cores",
+      "status": "killed"
+    },
+    {
       "rank": 6,
-      "title": "pass 4: 128-bit digest entropies with name passphrases, three waves (canonical inputs, two-cosigner pairing, typed inputs and cross-passphrase pairing), 8.03e9 pairs",
+      "title": "pass 4 waves 1 to 3: 128-bit digest entropies with name passphrases, canonical and typed inputs, both cosigner readings, 8.03e9 pairs",
       "cost": "about 50 minutes on 8 cores",
       "status": "killed"
     },

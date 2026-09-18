@@ -67,7 +67,7 @@ The escrow had been funded with 20,000 sats 17 hours earlier
 | 2026-09-17 07:34 | 967,379 | `530490fd94eb76e368a0eff96db87cb1bb74ac1027aa97765a34508d877c4de4` | player 5 | 4,000 sats | Passphrase fmt: first/full/middle name? spaced/joined? lower/UPPER/Capitalized? |
 | 2026-09-17 08:02 | 967,383 | `ec08d0014b545776344e84214c82d556e25f11eb91f5764fc2b5b3b18faf4c99` | author | 1,813 sats | Passphrase: You'll have to discover the fmt through brute force. The key question greatly narrows the search space. |
 | 2026-09-17 10:44 | 967,396 | `a347081cb74dd40f1a7cbe4a5dcb6f8f8a79d526cd07141c80a85e6ab6eec26e` | player 5 | 3,000 sats | Digest input: typed text, raw block bytes, a file, or something else? |
-| 2026-09-17 16:05 | unconfirmed | `5659ab70213e2e5b6811cdecf421e158d810617d765fa725ff80f20e0b9684fb` | author | 1,855 sats | Digest input: typed text or raw block bytes... (newline) I don't know... my memory's not that great. Maybe you could refresh it for me? (youtube.com/shorts/e_8s8fn93Ww) |
+| 2026-09-17 23:22 | 967,477 | `ed010443963e3601b35266a52108bd1b8dfa58e9e258a041098c05a474513fab` | author | 1,777 sats | The genesis block data can be viewed in binary, hex, decimal, or ASCII. If you figure out which part is being used as the entropy, just try all four forms. (newline) Want a valuable hint? Send 50k sats and I'll reveal the public keys for this address. |
 
 The three relayed questions were first paid by player 1 directly to the author's change
 address of the moment, off the escrow's history: 32,357 sats on 2026-08-23 16:20:06
@@ -95,10 +95,16 @@ The 2026-09-15 15:22 answer covers the two questions player 5 had sent before it
 answers whether both cosigners share the 12 words and the passphrase, and the second clause
 answers whether the words were generated from entropy.
 
-The 2026-09-17 16:05 message was unconfirmed when I recorded it; it spends the author's change
-output `bc1qnsk37lnc9unj4d4jjq5j3nh5u88dvfltv9r7xr`, which is what attributes it to the author.
-The linked video is the "I don't know, my memory ain't so great" scene from The Naked Gun
-(1988), in which the memory is refreshed by a payment. Read together with the author's standing
-rule that "Larger payments receive better hints" and the 2026-09-06 message that "Low-value
-transactions get bad hints", the answer to player 5's 3,000-sat question is a request for a
-larger payment, not a statement about the digest input.
+The author's reply to player 5's 3,000-sat question was sent twice. The first version,
+`5659ab70213e2e5b6811cdecf421e158d810617d765fa725ff80f20e0b9684fb`, paid 58 sats of fee, sat
+unconfirmed for about seven hours, and carried only a link to the "I don't know, my memory ain't
+so great" scene from The Naked Gun (1988). The author then replaced it by fee substitution with
+`ed010443963e...`, 136 sats of fee, which confirmed in block 967,477 and carries the hint above.
+The replaced transaction no longer exists in any mempool and is recorded here only because its
+first version is what a reader watching the channel that afternoon would have seen. Both spend
+the same change output `bc1qnsk37lnc9unj4d4jjq5j3nh5u88dvfltv9r7xr`, which attributes them to
+the author.
+
+The confirmed message is the first statement about how the entropy input is written rather than
+about which part it is, and it prices a further hint: 50,000 sats for the escrow's two public
+keys.

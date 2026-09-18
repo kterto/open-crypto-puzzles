@@ -1,4 +1,4 @@
-# Genesis Block Wallet Puzzle (229,724 sats, [OPEN])
+# Genesis Block Wallet Puzzle (231,501 sats, [OPEN])
 
 On 2026-08-22 an anonymous author published a 252-byte OP_RETURN message in block 963,629:
 a Bitcoin wallet generated only from data in Satoshi's genesis block, "extremely low"
@@ -21,15 +21,15 @@ bytes. The oracle is exact and offline. Four passes have now been run and none m
 |---|---|
 | Author | anonymous, on-chain only (every message is an OP_RETURN sent to the escrow) |
 | Published | 2026-08-22, OP_RETURN in block 963,629 ([transaction](https://mempool.space/tx/b691de3657880d9a1eabd2783b1a9fa8c5313ced338495bf10e85727012d7a77)) |
-| Prize | 229,724 sats (about $145 at BTC = $63,000, the 2026-08-16 snapshot); 168,779 sats on 2026-09-12 and 142,779 sats on 2026-08-29, growing with each paid question |
+| Prize | 231,501 sats (about $146 at BTC = $63,000, the 2026-08-16 snapshot); 229,724 sats earlier the same day, 168,779 on 2026-09-12, 142,779 on 2026-08-29, growing with each paid question |
 | Chain | bitcoin |
 | Escrow | `bc1qfkhx02v89u2qyyyljeczw6hu9sr437y44t7ae5yf09thrdukfqesnjg2wj` ([explorer](https://mempool.space/address/bc1qfkhx02v89u2qyyyljeczw6hu9sr437y44t7ae5yf09thrdukfqesnjg2wj)) |
-| Last on-chain check | 2026-09-17: funded and unspent, 37 confirmed outputs, 0 spent, confirmed on mempool.space with `tools/check_escrows.py`; one further message output of 1,855 sats was still unconfirmed |
+| Last on-chain check | 2026-09-17: funded and unspent, 38 confirmed outputs, 0 spent, nothing pending, confirmed on mempool.space |
 | Status | OPEN |
 | Puzzle type | multisig, raw-private-key |
 | Target format | P2WSH (v0), witness script `OP_2 <keyA> <keyB> OP_2 OP_CHECKMULTISIG`, both keys derived from one genesis-block field |
 | Certified oracle | yes: `tools/oracle.py --selftest` (certified against the BIP-173 P2WSH vector and a real 2-of-2 spent in block 963,629) |
-| What remains | insight: which genesis input is hashed into the 128-bit entropy, and the format of the name used as passphrase; a question on the first point is unanswered on chain at 2026-09-17 |
+| What remains | insight: which part of the genesis block is hashed into the 128-bit entropy. The author says the part is the puzzle and will not name it; he has named the four forms it can be written in and prices the escrow's public keys at 50,000 sats |
 | Series | none |
 
 ## The puzzle as published
@@ -71,7 +71,7 @@ Answers given so far, in order (the questions are in the clues file):
 | 2026-09-15 15:22 | "Perhaps... but figuring that out is part of the puzzle. The 12 words were generated from entropy." (answers two questions: whether both cosigners share the words and the passphrase, 10,000 sats, and whether the words were generated or chosen, 5,000 sats) |
 | 2026-09-16 12:40 | "It's a 128-bit digest." (asked, 5,000 sats: "Is the 128-bit entropy a zero-padded number, a digest, or neither?") |
 | 2026-09-17 08:02 | "Passphrase: You'll have to discover the fmt through brute force. The key question greatly narrows the search space." (asked, 4,000 sats: "Passphrase fmt: first/full/middle name? spaced/joined? lower/UPPER/Capitalized?") |
-| 2026-09-17 16:05 | "Digest input: typed text or raw block bytes... I don't know... my memory's not that great. Maybe you could refresh it for me?" with a link to the Naked Gun scene in which a memory is refreshed by a payment (asked, 3,000 sats: "Digest input: typed text, raw block bytes, a file, or something else?") |
+| 2026-09-17 23:22 | "The genesis block data can be viewed in binary, hex, decimal, or ASCII. If you figure out which part is being used as the entropy, just try all four forms." and "Want a valuable hint? Send 50k sats and I'll reveal the public keys for this address." (asked, 3,000 sats: "Digest input: typed text, raw block bytes, a file, or something else?") |
 
 The corpus is the genesis block itself, 285 bytes, public since 2009-01-03
 ([data/genesis-block.hex](data/genesis-block.hex)):
@@ -131,6 +131,13 @@ Reading of the hints, in the order they constrain the search:
    readings stay open. What is not stated is which input is hashed; a question asking
    exactly that (typed text, raw block bytes, a file, or something else) is on chain since
    2026-09-17 10:44 and unanswered.
+6. The answer to that question, confirmed in block 967,477 on 2026-09-17 23:22 UTC, is the
+   first statement about how the input is written rather than about which part it is: the
+   genesis data "can be viewed in binary, hex, decimal, or ASCII", and a solver who works out
+   which part carries the entropy should "just try all four forms". The author declines to name
+   the part, and prices the escrow's two public keys at 50,000 sats. Knowing the public keys
+   would remove the pairing step from a search but not the derivation, which is the larger half
+   of the cost here, so it buys roughly a factor of two and no information about the input.
 
 ### Derivation and oracle
 
@@ -213,34 +220,30 @@ windows, readings and derivation paths. Reproduce with `tools/candidates.py --wr
 | Pass 4 wave 1, the digest model (2026-09-17): entropy = a 128-bit digest of genesis data (18 digest readings over 73 genesis inputs, 1,278 distinct entropies), 12-word mnemonic, passphrase = one of 47 name formats for Hal Finney, Harold Finney and Satoshi Nakamoto, BIP48 with 13 genesis accounts and script types 0'/1'/2', suffix empty, /0/0, /0/1 or /1/0; both keys from the same seed, every ordered pair inside the seed | 60,066 seeds, 9,370,296 keys, 1,452,484,146 ordered pairs | CPU generation and pairing (`tools/check_digest_model.py --wave 1`), exact 32-byte compare | 0 match | yes: revealed pair in the first, middle and last entropy group, 141 of 141 re-found | 2026-09-17 |
 | Pass 4 wave 2 (2026-09-17): the same entropies and passphrases, two cosigners taken from two different digests at the same path under the same passphrase, 65 paths | 3,904,290 keys, 4,986,775,560 ordered pairs | same pipeline, `--wave 2` | 0 match | yes: revealed pair at the first, middle and last passphrase, 195 of 195 re-found | 2026-09-17 |
 | Pass 4 wave 3 (2026-09-17): 300 typed forms of the coinbase text, the headline and the date line (case, spacing, trailing newline, CRLF, period, quotes, eight date spellings, the block as a hex file) under 16 digest readings, 4,800 entropies, 137 name formats, 36 paths; pairs two paths under one seed and two name formats under one entropy | 4,800 entropies, 1,591,661,238 ordered pairs | same pipeline, `--wave 3` | 0 match | yes: revealed pair in the first, middle and last entropy group, 3 of 3 re-found | 2026-09-17 |
+| Pass 4 wave 4, the four forms (2026-09-17): 25 genesis parts (the header fields in both byte orders, the block, the header, the coinbase transaction, the texts, the public key and its coordinates, the truncated hashes) each rendered in 11 ways covering the author's four views (raw bytes, lower and upper-case hex, the decimal value, the bit string plain, stripped and byte-spaced, the latin-1 and dotted ASCII views, the per-byte decimal lists), 4,284 entropies, 47 name formats, 52 paths; pairs inside one seed and across two entropies at the 13 native-P2WSH accounts | 4,284 entropies, 11,744,847,956 ordered pairs | CPU generation and pairing, `tools/check_digest_model.py --wave 4`, 8 processes, exact 32-byte compare | 0 match | yes: revealed pair inserted in the first, middle and last entropy group and in the cross pass, 4 of 4 re-found | 2026-09-17 |
 
 ## Open leads, ranked
 
-1. **Pay for the digest input** (needs a person; 10,000 sats, about $6 against a 229,724-sat
-   prize). Player 5 asked the right question at 2026-09-17 10:44 UTC but paid 3,000 sats and
-   got the Naked Gun memory joke back, which matches the author's rule that low-value
-   transactions get bad hints: the two answers that moved this puzzle cost 10,000 sats each.
-   Draft, 60 bytes: `Which exact genesis bytes are hashed to the 128-bit entropy?`
-   Pass 4 shows the 73 obvious readings are all wrong, so this is the one purchase that
-   collapses the space.
-2. **Ask for the digest function in the same message** (needs a person; same payment). The
-   author says "a 128-bit digest" without naming it. Draft, 76 bytes:
-   `Digest fn: MD5, or truncated SHA-256? Digest taken over which genesis bytes?`
-   Pass 4 covered 18 readings of "128-bit digest" over 73 inputs; one answer collapses that
-   product to a handful of candidates.
-3. **Pass 5, once the input is known** (minutes). With the input named, the remaining space is
-   the name format, which the author says is the brute-force part, and the path. That is a few
-   million keys, which this folder's CPU pipeline finishes in minutes.
-4. **Widen the digest inputs further** (hours on 8 cores, low prior). Wave 3 has already
-   taken the typed forms of the three texts, 137 name formats and the cross-passphrase pair,
-   and matched nothing. What is left on this line is concatenations of two genesis fields,
-   the block in other file encodings, and digest functions outside the 18 tested. Each is a
-   guess at the one thing the author sells for 10,000 sats.
-5. **Watch the channel** (minutes). Re-read the escrow before any work: a new OP_RETURN from
+1. **Buy the digest function, not the part** (needs a person; 10,000 sats, about $6). The
+   author has refused to name which part of the block carries the entropy, twice, and calls it
+   the puzzle itself. He has never refused a question of pure fact. Draft, 48 bytes:
+   `128-bit digest: MD5? Or truncated SHA256? Which one?`
+   Every pass so far spreads its budget over 16 to 18 digest readings; one answer divides the
+   space by that factor whatever the input turns out to be.
+2. **Enumerate more parts in the four forms** (hours on 8 cores). Wave 4 took 25 parts. The
+   author said "which part", which need not be a whole field: windows of the block, the
+   individual fields of the coinbase transaction, the script pieces, and the fields as they
+   appear in an explorer's JSON are all parts a person would point at. Each is cheap to add,
+   and the four-forms rule now fixes how each is written.
+3. **Watch the channel** (minutes). Re-read the escrow before any work: a new OP_RETURN from
    the author's change chain is a new constraint, a spend closes the puzzle. The author's
-   current change output at 2026-09-17 is
-   `bc1qnsk37lnc9unj4d4jjq5j3nh5u88dvfltv9r7xr`; it moves with every message, so follow the
-   input chain of the last author transaction rather than this fixed address.
+   current change output at 2026-09-17 is the change of
+   `ed010443963e3601b35266a52108bd1b8dfa58e9e258a041098c05a474513fab`; it moves with every
+   message, so follow the input chain of the last author transaction.
+4. **The 50,000-sat public-key offer** (needs a person; not recommended). The keys would let a
+   search test each candidate directly instead of pairing, which removes the smaller half of
+   the cost: in this folder's runs, derivation takes longer than pairing. It buys about a
+   factor of two, for five times the price of a question, and says nothing about the input.
 
 ## Files in this folder
 

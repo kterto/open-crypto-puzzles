@@ -34,6 +34,7 @@ Usage (run from this folder):
     python3 tools/check_digest_model.py --wave 1 [--procs 8]
     python3 tools/check_digest_model.py --wave 2 [--procs 8]
     python3 tools/check_digest_model.py --wave 3 [--procs 8]
+    python3 tools/check_digest_model.py --wave 4 [--procs 8]
 
 Input:
     data/genesis-block.hex and the constants below. No network.
@@ -385,9 +386,148 @@ def wave3_entropies() -> list[tuple[bytes, str]]:
     return list(ents.items())
 
 
+PARTS = {
+    "version": (VERSION).to_bytes(4, "big"), "version_le": (VERSION).to_bytes(4, "little"),
+    "prevhash": bytes(32),
+    "merkle_be": MERKLE_BE, "merkle_le": MERKLE_BE[::-1],
+    "time": (TIME).to_bytes(4, "big"), "time_le": (TIME).to_bytes(4, "little"),
+    "bits": (BITS).to_bytes(4, "big"), "bits_le": (BITS).to_bytes(4, "little"),
+    "nonce": (NONCE).to_bytes(4, "big"), "nonce_le": (NONCE).to_bytes(4, "little"),
+    "blockhash_be": HASH_BE, "blockhash_le": HASH_BE[::-1],
+    "header": HEADER, "block": BLOCK, "coinbase_tx": COINBASE_TX,
+    "coinbase_text": T, "headline": J, "scriptsig": S,
+    "pubkey": PUBKEY, "pubkey_x": PUBKEY[1:33], "pubkey_y": PUBKEY[33:],
+    "merkle16": MERKLE_BE[:16], "blockhash16": HASH_BE[:16],
+    "reward": (50).to_bytes(4, "big"),
+}
+
+WAVE4_PATHS = ([(f"m/48\'/0\'/{a}\'/2\'", s) for a in ACCOUNTS for s in ("0/0", "0/1")] +
+               [(f"m/48\'/0\'/{a}\'/1\'", "0/0") for a in ACCOUNTS] +
+               [(f"m/48\'/0\'/{a}\'/0\'", "0/0") for a in ACCOUNTS])
+WAVE4_B_IDX = [i for i, (acct, suf) in enumerate(WAVE4_PATHS)
+               if acct.endswith("2'") and suf == "0/0"]
+
+
+def four_forms(name: str, b: bytes) -> dict[str, bytes]:
+    """binary, hex, decimal and ASCII: the four views the author names."""
+    out = {}
+    bits = "".join(format(x, "08b") for x in b)
+    out[f"{name}/raw"] = b
+    out[f"{name}/hex"] = b.hex().encode()
+    out[f"{name}/HEX"] = b.hex().upper().encode()
+    out[f"{name}/dec"] = str(int.from_bytes(b, "big")).encode()
+    out[f"{name}/bin"] = bits.encode()
+    out[f"{name}/bin_nolead"] = bits.lstrip("0").encode() or b"0"
+    out[f"{name}/bin_spaced"] = " ".join(format(x, "08b") for x in b).encode()
+    out[f"{name}/ascii"] = b.decode("latin-1").encode("latin-1")
+    out[f"{name}/ascii_dots"] = "".join(chr(x) if 32 <= x < 127 else "." for x in b).encode()
+    out[f"{name}/dec_bytes"] = " ".join(str(x) for x in b).encode()
+    out[f"{name}/dec_bytes_csv"] = ",".join(str(x) for x in b).encode()
+    return out
+
+
+def wave4_entropies() -> list[tuple[bytes, str]]:
+    forms = {}
+    for name, blob in PARTS.items():
+        forms.update(four_forms(name, blob))
+    ents: dict[bytes, str] = {}
+    for label, blob in forms.items():
+        for dname, d in digests(blob).items():
+            ents.setdefault(d, f"{dname}({label})")
+    return list(ents.items())
+
+
+WAVE4_ENTS = wave4_entropies()
+
+
+def _wave4_keys(mnemonic, pw):
+    from bip_utils import Bip39SeedGenerator, Bip32Slip10Secp256k1
+    ctx = Bip32Slip10Secp256k1.FromSeed(Bip39SeedGenerator(mnemonic).Generate(pw))
+    keys, nodes = [], {}
+    for acct, suf in WAVE4_PATHS:
+        try:
+            if acct not in nodes:
+                nodes[acct] = ctx.DerivePath(acct)
+            keys.append(nodes[acct].DerivePath(suf).PublicKey().RawCompressed().ToBytes())
+        except Exception:
+            keys.append(None)
+    return keys
+
+
+def _wave4(job):
+    """Phase A for one entropy, and the /0/0 keys this entropy contributes to phase B."""
+    from bip_utils import Bip39MnemonicGenerator
+    idx, marked = job
+    ent, label = WAVE4_ENTS[idx]
+    mnemonic = str(Bip39MnemonicGenerator().FromEntropy(ent))
+    npairs, hits, wit, export = 0, [], 0, []
+    for pw_i, pw in enumerate(NAMES):
+        ks = _wave4_keys(mnemonic, pw)
+        export.append([ks[i] for i in WAVE4_B_IDX])
+        kk = [k for k in ks if k]
+        if marked and pw_i == 0:
+            kk = kk + [oracle.REVEALED_A, oracle.REVEALED_B]
+        n, found = _pair(kk, kk, True)
+        npairs += n
+        for t, i, j in found:
+            if t == "WITNESS":
+                wit += 1
+            else:
+                hits.append((label, pw, i, j, mnemonic))
+    return idx, npairs, hits, wit, export
+
+
+def run_wave4(procs):
+    print(f"parts {len(PARTS)}, entropies {len(WAVE4_ENTS)}, names {len(NAMES)}, "
+          f"paths {len(WAVE4_PATHS)}, phase-B paths {len(WAVE4_B_IDX)}", flush=True)
+    marks = {0, len(WAVE4_ENTS) // 2, len(WAVE4_ENTS) - 1}
+    jobs = [(i, i in marks) for i in range(len(WAVE4_ENTS))]
+    t0, total, wit, allhits, table = time.time(), 0, 0, [], {}
+    with Pool(procs) as pool:
+        for k, (idx, n, hits, w, export) in enumerate(
+                pool.imap_unordered(_wave4, jobs, chunksize=1)):
+            total += n
+            wit += w
+            table[idx] = export
+            for h in hits:
+                allhits.append(h)
+                print("MATCH A", h, flush=True)
+            if k % 200 == 0:
+                el = time.time() - t0
+                print(f"  phase A {k}/{len(jobs)}, {total:,} pairs, "
+                      f"{int(total / max(el, 1)):,}/s, {el:.0f}s", flush=True)
+    print(f"  phase A complete: {total:,} pairs, witness {wit}", flush=True)
+
+    order = sorted(table)
+    for pw_i, pw in enumerate(NAMES):
+        for p in range(len(WAVE4_B_IDX)):
+            col = [(i, table[i][pw_i][p]) for i in order if table[i][pw_i][p]]
+            if pw_i == 0 and p == 0:
+                col += [(-1, oracle.REVEALED_A), (-2, oracle.REVEALED_B)]
+            keys = [k for _, k in col]
+            n, found = _pair(keys, keys, True)
+            total += n
+            for t, i, j in found:
+                if t == "WITNESS":
+                    wit += 1
+                else:
+                    allhits.append((col[i][0], col[j][0], pw, WAVE4_PATHS[WAVE4_B_IDX[p]]))
+                    print("MATCH B", allhits[-1], flush=True)
+        el = time.time() - t0
+        print(f"  phase B {pw_i + 1}/{len(NAMES)} passphrases, {total:,} pairs, "
+              f"{int(total / max(el, 1)):,}/s, {el:.0f}s", flush=True)
+    el = time.time() - t0
+    print(f"done: {total:,} ordered pairs in {el:.0f}s ({int(total / el):,}/s)")
+    print(f"witness re-found {wit} of 4 expected")
+    print(f"escrow matches: {len(allhits)}")
+    if allhits:
+        return 0
+    return 1 if wit == 4 else 2
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--wave", type=int, choices=(1, 2, 3))
+    ap.add_argument("--wave", type=int, choices=(1, 2, 3, 4))
     ap.add_argument("--procs", type=int, default=8)
     ap.add_argument("--count", action="store_true")
     args = ap.parse_args()
@@ -403,10 +543,16 @@ def main():
               f"ordered pairs {n * (n - 1) * len(NAMES) * len(WAVE2_PATHS):,}")
         e3, p3, c3 = len(wave3_entropies()), len(WAVE3_PATHS), len(CORE_IDX)
         b3 = len([1 for acct, _ in WAVE3_PATHS if acct.endswith("2'")])
+        e4, p4, b4 = len(WAVE4_ENTS), len(WAVE4_PATHS), len(WAVE4_B_IDX)
+        print(f"wave 4: parts {len(PARTS)}, entropies {e4}, paths {p4}, ordered pairs "
+              f"{e4 * len(NAMES) * p4 * (p4 - 1) + len(NAMES) * b4 * e4 * (e4 - 1):,}")
         print(f"wave 3: typed inputs {len(typed_variants())}, entropies {e3}, "
               f"names {len(NAMES_WIDE)}, paths {p3}, ordered pairs "
               f"{e3 * len(NAMES_WIDE) * p3 * (p3 - 1) + e3 * (c3 * (c3 - 1) // 2) * b3 * b3:,}")
         return 0
+
+    if args.wave == 4:
+        return run_wave4(args.procs)
 
     if args.wave == 1:
         marks = {0, len(ENTS) // 2, len(ENTS) - 1}

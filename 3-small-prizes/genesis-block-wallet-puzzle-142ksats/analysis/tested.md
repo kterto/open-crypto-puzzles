@@ -174,3 +174,21 @@ RIPEMD readings were covered over the canonical inputs in waves 1 and 2), 137 na
 12 accounts, script types 1' and 2'. The three waves together test 8,030,920,944 ordered pairs
 of the digest model. The digest input remains the open unknown, and buying it from the author
 is still the cheapest way to close it.
+
+## Pass 4, wave 4: the four forms (2026-09-17)
+
+On 2026-09-17 23:22 UTC, in block 967,477, the author answered the question about the digest
+input with the first statement about how that input is written: "The genesis block data can be
+viewed in binary, hex, decimal, or ASCII. If you figure out which part is being used as the
+entropy, just try all four forms." Wave 4 applies that rule to every part of the block I can
+name.
+
+| Hypothesis | Space (N) | Method | Result | Witness | Rate | Date |
+|---|---|---|---|---|---|---|
+| Pass 4 wave 4: 25 genesis parts (version, previous hash, merkle root, time, bits and nonce in both byte orders, the block hash in both orders, the header, the whole block, the coinbase transaction, the coinbase text, the headline, the scriptSig, the public key and its two coordinates, the 16-byte prefixes of the two hashes, the block reward), each rendered in 11 forms covering the author's four views (raw bytes, lower-case hex, upper-case hex, the decimal value of the field, the bit string plain, with leading zeros stripped and byte-spaced, the latin-1 ASCII view, the dotted printable view, and the per-byte decimal lists space and comma separated), each form hashed under 16 digest readings; 12-word BIP39, 47 name formats, 52 paths (13 genesis accounts, script types 0', 1', 2', suffixes /0/0 and /0/1); phase A pairs two paths inside one seed, phase B pairs two entropies at the 13 native-P2WSH `/0/0` paths under one passphrase | 275 forms, 4,284 distinct entropies, 11,744,847,956 ordered pairs | CPU BIP39/BIP32 generation and pairing, `tools/check_digest_model.py --wave 4`, 8 processes, exact 32-byte compare | 0 match | yes: the revealed 2-of-2 pair of block 963,629 inserted in the first, middle and last entropy group of phase A and in the first column of phase B, 4 of 4 re-found | 2,056,087 ordered pairs/s on an 8-core Apple M-series CPU, 5,712 s | 2026-09-17 |
+
+Scope: the 25 parts listed and no others, the 11 renderings listed, 16 digest readings, 47 name
+formats, 52 paths. The author's rule is about the form, not the part, and "which part is being
+used" stays open: a part can be smaller or larger than a field, and wave 4 does not enumerate
+windows of the block, the individual fields of the coinbase transaction, or the pieces of the
+scriptSig. The four passes together test 605,494,412,466 ordered pairs of this puzzle.
