@@ -68,6 +68,8 @@ The escrow had been funded with 20,000 sats 17 hours earlier
 | 2026-09-17 08:02 | 967,383 | `ec08d0014b545776344e84214c82d556e25f11eb91f5764fc2b5b3b18faf4c99` | author | 1,813 sats | Passphrase: You'll have to discover the fmt through brute force. The key question greatly narrows the search space. |
 | 2026-09-17 10:44 | 967,396 | `a347081cb74dd40f1a7cbe4a5dcb6f8f8a79d526cd07141c80a85e6ab6eec26e` | player 5 | 3,000 sats | Digest input: typed text, raw block bytes, a file, or something else? |
 | 2026-09-17 23:22 | 967,477 | `ed010443963e3601b35266a52108bd1b8dfa58e9e258a041098c05a474513fab` | author | 1,777 sats | The genesis block data can be viewed in binary, hex, decimal, or ASCII. If you figure out which part is being used as the entropy, just try all four forms. (newline) Want a valuable hint? Send 50k sats and I'll reveal the public keys for this address. |
+| 2026-09-18 12:40 | 967,558 | `679cfe1e07b15d7cdd2e0200809e37329366dd4b88d7be01f52570e87e935649` | player 7 | 10,000 sats | Is the hashed part a header field, the coinbase text, or the whole block? |
+| 2026-09-18 16:45 | unconfirmed | `5c5bd947741b29f733cb2707480cb642e942ddfffe510330ee6eb3d196e03f72` | author | 515 sats | Some part of the genesis block. The hints are meant to clarify the map, not hand you the route. |
 
 The three relayed questions were first paid by player 1 directly to the author's change
 address of the moment, off the escrow's history: 32,357 sats on 2026-08-23 16:20:06
@@ -108,3 +110,18 @@ the author.
 The confirmed message is the first statement about how the entropy input is written rather than
 about which part it is, and it prices a further hint: 50,000 sats for the escrow's two public
 keys.
+
+The 2026-09-18 answer is the first one the author did not send from the chain of change outputs
+he had used since 2026-08-23. That chain ended at
+`ed010443963e...`, which spent its whole input and left no change. He sent the new message from
+`bc1qyas2lnfgzjh3lyl4vfhc68daedc890zn8yetaj` instead, which is the address that published the
+announcement in block 963,629 and took the change of the first funding transaction; that is what
+attributes it to him. The 546 sats it spends arrived that morning from
+`19y6Sr1Fkb6cZRA8PbCb1t2bXZWRTGVeG6`, an unrelated legacy address with 97 transactions, in a
+transaction carrying the OP_RETURN `t 0 0 "We will figure it out. theblocknote.eth.link"`. That
+message is not part of the dialogue and is not addressed to the escrow; the author simply spent
+the dust someone sent him.
+
+The exchange settles one thing: a question asking which part of the block carries the entropy is
+refused at 10,000 sats, the price that bought the two informative answers of 2026-09-10 and
+2026-09-11. The author draws the line at the input itself and answers questions about its form.

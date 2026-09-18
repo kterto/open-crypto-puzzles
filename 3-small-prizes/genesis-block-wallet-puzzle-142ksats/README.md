@@ -29,7 +29,7 @@ bytes. The oracle is exact and offline. Four passes have now been run and none m
 | Puzzle type | multisig, raw-private-key |
 | Target format | P2WSH (v0), witness script `OP_2 <keyA> <keyB> OP_2 OP_CHECKMULTISIG`, both keys derived from one genesis-block field |
 | Certified oracle | yes: `tools/oracle.py --selftest` (certified against the BIP-173 P2WSH vector and a real 2-of-2 spent in block 963,629) |
-| What remains | insight: which part of the genesis block is hashed into the 128-bit entropy. The author says the part is the puzzle and will not name it; he has named the four forms it can be written in and prices the escrow's public keys at 50,000 sats |
+| What remains | insight: which part of the genesis block is hashed into the 128-bit entropy. A 10,000-sat question asking for the category of that part was refused on 2026-09-18, at the price that bought two informative answers in September; the author answers about the form of the input and not about the input |
 | Series | none |
 
 ## The puzzle as published
@@ -72,6 +72,7 @@ Answers given so far, in order (the questions are in the clues file):
 | 2026-09-16 12:40 | "It's a 128-bit digest." (asked, 5,000 sats: "Is the 128-bit entropy a zero-padded number, a digest, or neither?") |
 | 2026-09-17 08:02 | "Passphrase: You'll have to discover the fmt through brute force. The key question greatly narrows the search space." (asked, 4,000 sats: "Passphrase fmt: first/full/middle name? spaced/joined? lower/UPPER/Capitalized?") |
 | 2026-09-17 23:22 | "The genesis block data can be viewed in binary, hex, decimal, or ASCII. If you figure out which part is being used as the entropy, just try all four forms." and "Want a valuable hint? Send 50k sats and I'll reveal the public keys for this address." (asked, 3,000 sats: "Digest input: typed text, raw block bytes, a file, or something else?") |
+| 2026-09-18 16:45 | "Some part of the genesis block. The hints are meant to clarify the map, not hand you the route." (asked, 10,000 sats: "Is the hashed part a header field, the coinbase text, or the whole block?") |
 
 The corpus is the genesis block itself, 285 bytes, public since 2009-01-03
 ([data/genesis-block.hex](data/genesis-block.hex)):
@@ -226,13 +227,15 @@ windows, readings and derivation paths. Reproduce with `tools/candidates.py --wr
 
 ## Open leads, ranked
 
-1. **Buy the part, since the guesses are exhausted** (needs a person; 10,000 sats, about $6).
-   Six passes have now tried 24 digest readings, two key encodings, 137 name formats and every
-   part and window of the block I can name, and none of them reproduces the escrow. The cheap
-   guesses are spent, so the question is worth more than another sweep. Draft, 73 bytes:
-   `Is the hashed part a header field, the coinbase text, or the whole block?`
-   It asks for a category rather than the answer, which is the kind of question this author has
-   answered before.
+1. **Buy the digest function, the one fact he has never refused** (needs a person; 10,000 sats).
+   The category question above was sent on 2026-09-18 with 10,000 sats and refused: "Some part
+   of the genesis block. The hints are meant to clarify the map, not hand you the route." The
+   author answers about the form of the input, never about the input, so the remaining question
+   worth paying for is the one about the function. Draft, 48 bytes:
+   `128-bit digest: MD5? Or truncated SHA256? Which one?`
+   Six passes spread their budget over 24 digest readings; an answer divides the next sweep by
+   that factor whatever the part turns out to be. It is the last cheap fact I can name, and if
+   it is refused too, the channel has given all it will give without a new idea.
 2. **Enumerate the parts wave 5 did not reach** (hours on 8 cores, falling prior). Wave 5 took
    the coinbase transaction's fields, the script pieces and 114 windows of the block and the
    text at stride 4 and 8, and matched nothing. What is left on this line is windows at stride
