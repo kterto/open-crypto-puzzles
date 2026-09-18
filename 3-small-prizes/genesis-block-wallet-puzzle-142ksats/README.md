@@ -229,8 +229,8 @@ windows, readings and derivation paths. Reproduce with `tools/candidates.py --wr
 1. **Buy the part, since the guesses are exhausted** (needs a person; 10,000 sats, about $6).
    Six passes have now tried 24 digest readings, two key encodings, 137 name formats and every
    part and window of the block I can name, and none of them reproduces the escrow. The cheap
-   guesses are spent, so the question is worth more than another sweep. Draft, 79 bytes:
-   `Is the entropy hashed from one header field, the coinbase text, or the whole block?`
+   guesses are spent, so the question is worth more than another sweep. Draft, 73 bytes:
+   `Is the hashed part a header field, the coinbase text, or the whole block?`
    It asks for a category rather than the answer, which is the kind of question this author has
    answered before.
 2. **Enumerate the parts wave 5 did not reach** (hours on 8 cores, falling prior). Wave 5 took

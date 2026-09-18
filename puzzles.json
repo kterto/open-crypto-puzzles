@@ -4230,7 +4230,7 @@
       "leads": [
         {
           "rank": 1,
-          "title": "ask the author for the category of the entropy input (one header field, the coinbase text, or the whole block), 79-byte draft in the README",
+          "title": "ask the author for the category of the entropy input (a header field, the coinbase text, or the whole block), 73-byte draft in the README",
           "cost": "needs-a-person",
           "status": "open"
         },
