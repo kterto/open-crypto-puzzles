@@ -263,6 +263,7 @@ windows, readings and derivation paths. Reproduce with `tools/candidates.py --wr
 | `tools/oracle.py` | candidate checker: two keys to 2-of-2 P2WSH, both orders, exact match; `--selftest` |
 | `tools/candidates.py` | key generator for passes 1 and 2 (families A to G, labeled), witness insertion, targets file, CPU re-derivation of GPU hits |
 | `tools/check_digest_model.py` | pass 4: the 2026-09-14 to 2026-09-17 model (128-bit digest entropy, name passphrase), waves 1 and 2, witness insertion, exact compare |
+| `tools/try_hypothesis.py` | test one idea by hand: name a part, a form, a digest and a passphrase, sweep whatever is left out, exact compare; `--list`, `--selftest` |
 
 ## Sources
 
